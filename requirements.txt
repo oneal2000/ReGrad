@@ -1,0 +1,11 @@
+torch==2.0.1
+transformers==4.45.2
+accelerate==1.1.1
+peft==0.14.0
+tqdm
+numpy==1.26.4
+ujson
+elasticsearch==8.15.0
+pandas==1.5.3
+faiss-cpu==1.8.0
+termcolor
