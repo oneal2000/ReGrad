@@ -841,16 +841,16 @@ if __name__ == "__main__":
 
     # 用train_sample指定样本数
     train_set_wiki = WikiMultiHopQA(
-        gold_file=f"../data/2wikimultihopqa/train_{args.train_sample}.json",
+        gold_file=f"../data_aug/2wikimultihopqa/train_{args.train_sample}.json",
     ).derive_training_dataset()
     train_set_complexweb = ComplexWebQA(
-        gold_file=f"../data/complexwebquestions/train_{args.train_sample}.json",
+        gold_file=f"../data_aug/complexwebquestions/train_{args.train_sample}.json",
     ).derive_training_dataset()
     train_set_pop = PopQA(
-        gold_file=f"../data/popqa/train_{args.train_sample}.json",
+        gold_file=f"../data_aug/popqa/train_{args.train_sample}.json",
     ).derive_training_dataset()
     train_set_hotpot = HotpotQA(
-        gold_file=f"../data/hotpotqa/train_{args.train_sample}.json",
+        gold_file=f"../data_aug/hotpotqa/train_{args.train_sample}.json",
     ).derive_training_dataset()
     # if args.copyhot:
     #     train_set = mix_datasets([train_set_wiki, train_set_complexweb,train_set_pop, train_set_hotpot, train_set_hotpot])  # copy hotpotqa
@@ -859,16 +859,16 @@ if __name__ == "__main__":
 
     val_set = MixMultiVal(
         WikiMultiHopQA(
-            gold_file=f"../data/2wikimultihopqa/dev.json",
+            gold_file=f"../data_aug/2wikimultihopqa/dev.json",
         ).derive_trunc_dataset(),
         ComplexWebQA(
-            gold_file=f"../data/complexwebquestions/de.json",
+            gold_file=f"../data_aug/complexwebquestions/de.json",
         ).derive_trunc_dataset(),
         HotpotQA(
-            gold_file=f"../data/hotpotqa/dev.json",
+            gold_file=f"../data_aug/hotpotqa/dev.json",
         ).derive_trunc_dataset(),
         PopQA(
-            gold_file=f"../data/popqa/dev.json",
+            gold_file=f"../data_aug/popqa/dev.json",
         ).derive_trunc_dataset(),
     )
 
