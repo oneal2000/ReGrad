@@ -862,7 +862,7 @@ if __name__ == "__main__":
             gold_file=f"../data_aug/2wikimultihopqa/dev.json",
         ).derive_trunc_dataset(),
         ComplexWebQA(
-            gold_file=f"../data_aug/complexwebquestions/de.json",
+            gold_file=f"../data_aug/complexwebquestions/dev.json",
         ).derive_trunc_dataset(),
         HotpotQA(
             gold_file=f"../data_aug/hotpotqa/dev.json",
