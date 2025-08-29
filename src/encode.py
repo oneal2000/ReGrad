@@ -160,9 +160,7 @@ def main(args):
 
                 pbar.update(1)
 
-        save_dir = os.path.join(
-                ROOT_DIR, "offline", f"top{args.topk}", args.output_dir, args.dataset
-        )
+        save_dir = os.path.join("offline", f"top{args.topk}", args.output_dir, args.dataset)
         os.makedirs(save_dir, exist_ok=True)
         torch.save(all_grads, os.path.join(save_dir, f"{filename}_all.pt"))
 

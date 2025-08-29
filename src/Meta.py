@@ -792,16 +792,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--peft_config_file", default="../config/sample/peft_config.json"
+        "--peft_config_file"
     )
-    parser.add_argument("--train_args_file", default="../config/sample/train_args.json")
+    parser.add_argument("--train_args_file")
     parser.add_argument(
-        "--generation_config_file", default="../config/sample/generation_config.json"
+        "--generation_config_file"
     )
     parser.add_argument(
-        "--learner_config_file", default="../config/sample/learner_config.json"
+        "--learner_config_file"
     )
-    parser.add_argument("--output_dir", default="../outputs/sample")
+    parser.add_argument("--output_dir", default="outputs/sample")
     parser.add_argument("--overwrite", action="store_true")
     # parser.add_argument("--copyhot", action="store_true")
     parser.add_argument(
@@ -841,16 +841,16 @@ if __name__ == "__main__":
 
     # 用train_sample指定样本数
     train_set_wiki = WikiMultiHopQA(
-        gold_file=f"../data_aug/2wikimultihopqa/train_{args.train_sample}.json",
+        gold_file=f"data_aug/2wikimultihopqa/train_{args.train_sample}.json",
     ).derive_training_dataset()
     train_set_complexweb = ComplexWebQA(
-        gold_file=f"../data_aug/complexwebquestions/train_{args.train_sample}.json",
+        gold_file=f"data_aug/complexwebquestions/train_{args.train_sample}.json",
     ).derive_training_dataset()
     train_set_pop = PopQA(
-        gold_file=f"../data_aug/popqa/train_{args.train_sample}.json",
+        gold_file=f"data_aug/popqa/train_{args.train_sample}.json",
     ).derive_training_dataset()
     train_set_hotpot = HotpotQA(
-        gold_file=f"../data_aug/hotpotqa/train_{args.train_sample}.json",
+        gold_file=f"data_aug/hotpotqa/train_{args.train_sample}.json",
     ).derive_training_dataset()
     # if args.copyhot:
     #     train_set = mix_datasets([train_set_wiki, train_set_complexweb,train_set_pop, train_set_hotpot, train_set_hotpot])  # copy hotpotqa
@@ -859,16 +859,16 @@ if __name__ == "__main__":
 
     val_set = MixMultiVal(
         WikiMultiHopQA(
-            gold_file=f"../data_aug/2wikimultihopqa/dev.json",
+            gold_file=f"data_aug/2wikimultihopqa/dev.json",
         ).derive_trunc_dataset(),
         ComplexWebQA(
-            gold_file=f"../data_aug/complexwebquestions/dev.json",
+            gold_file=f"data_aug/complexwebquestions/dev.json",
         ).derive_trunc_dataset(),
         HotpotQA(
-            gold_file=f"../data_aug/hotpotqa/dev.json",
+            gold_file=f"data_aug/hotpotqa/dev.json",
         ).derive_trunc_dataset(),
         PopQA(
-            gold_file=f"../data_aug/popqa/dev.json",
+            gold_file=f"data_aug/popqa/dev.json",
         ).derive_trunc_dataset(),
     )
 

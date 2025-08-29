@@ -6,6 +6,7 @@
 conda create -n re_grad python=3.10.15
 conda activate re_grad 
 pip install -r requirements.txt
+pip install torch==2.0.1
 ```
 
 ### Data Preparation
@@ -94,21 +95,15 @@ For easier training, please name the generated train sets as `train_{number of s
 
 #### Training Meta-learing Model
 
-Go the `src` folder
-
-```bash
-cd src
-```
-
 Run training with the following command:
 
 ```bash
-python Meta.py \
+python src/Meta.py \
 	--peft_config_file [your_peft_config_file].json \
 	--train_args_file [your_train_args_file].json \
 	--generation_config_file [your_generation_config_file] \
 	--learner_config_file [your_learner_config_file].json \
-	--train_sample <number of samples>
+	--train_sample [number_of_samples]
 	--output_dir [your_output_dir]
 ```
 
@@ -155,7 +150,7 @@ Solve it by the following steps:
 Run encoding with the following command:
 
 ```
-python encode.py \
+python src/encode.py \
 	--dataset 2wikimultihopqa \
 	--data_path data/2wikimultihopqa \
 	--model_path [your trained model] \
@@ -163,7 +158,7 @@ python encode.py \
 	--split dev \
 	--start 0 \
 	--end 300 \
-	--output_dir 3.2-1b
+	--output_dir [your_output_dir_name]
 ```
 
 | **Parameter** | **Example/Options**                                          |
@@ -190,7 +185,7 @@ offline/
 Running inference with the following command:
 
 ```
-python inference.py \
+python src/inference.py \
     --model_path [your trained model] \
     --offline_dir [calculated gradients] \
     --grad_file [file_name] \

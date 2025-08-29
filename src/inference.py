@@ -47,16 +47,16 @@ if __name__ == "__main__":
 
     print("===Loading Dataset===")
     dataset = MixMultiVal(
-        WikiMultiHopQA("../data_aug/2wikimultihopqa/dev.json").derive_trunc_dataset(
+        WikiMultiHopQA("data_aug/2wikimultihopqa/dev.json").derive_trunc_dataset(
             args.num_samples_for_eval
         ),
-        ComplexWebQA("../data_aug/complexwebquestions/dev.json").derive_trunc_dataset(
+        ComplexWebQA("data_aug/complexwebquestions/dev.json").derive_trunc_dataset(
             args.num_samples_for_eval
         ),
-        HotpotQA("../data_aug/hotpotqa/dev.json").derive_trunc_dataset(
+        HotpotQA("data_aug/hotpotqa/dev.json").derive_trunc_dataset(
             args.num_samples_for_eval
         ),
-        PopQA("../data_aug/popqa/dev.json").derive_trunc_dataset(args.num_samples_for_eval),
+        PopQA("data_aug/popqa/dev.json").derive_trunc_dataset(args.num_samples_for_eval),
     )
 
     accelerator = Accelerator(mixed_precision=args.mixed_precision)
