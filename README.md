@@ -4,7 +4,7 @@
 
 ```
 conda create -n re_grad python=3.10.15
-conda activate regrad 
+conda activate re_grad 
 pip install -r requirements.txt
 ```
 
