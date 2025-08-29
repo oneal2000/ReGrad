@@ -124,7 +124,7 @@ Here is the meanings of arguments:
 
 The running parameters of the main experiments are provided in the `configs` folder.
 
-### Calculating Gratitude
+### Calculating Gradients
 
 Run encoding with the following command:
 
@@ -144,14 +144,14 @@ python encode.py \
 | :------------ | :----------------------------------------------------------- |
 | `dataset`     | `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions` |
 | `data_path`   | folder to the saved data, such as `data/2wikimultihopqa`     |
-| `split`       | "dev", calculating the gratitude of passages                 |
+| `split`       | "dev", calculating the gradients of passages                 |
 | `topk`        | retrieval number                                             |
 | `start, end ` | Start/End index of samples to process, being none means taking all samples |
 | `output_dir`  | path to the generated data, such as 3.2-1b                   |
 
 `encode_all.sh` has been provided to encode all the four datasets in one time.
 
-All generated gratitudes are stored in the `offline` folder. The specific location of the gratitude files is as follows:
+All generated gradients are stored in the `offline` folder. The specific location of the gradients files is as follows:
 
 ```
 offline/
@@ -168,7 +168,7 @@ Running inference with the following command:
 ```
 python inference.py \
     --model_path [your trained model] \
-    --offline_dir [calculated gratitude] \
+    --offline_dir [calculated gradients] \
     --grad_file [file_name] \
     --gamma 1 \
     --prediction_file [path to the saved results] \
@@ -179,7 +179,7 @@ python inference.py \
 
 | **Parameter**          | **Example/Options**                                       |
 | :--------------------- | :-------------------------------------------------------- |
-| `grad_file`            | file name of calculated gratitudes, such as "dev_all.pt"  |
+| `grad_file`            | file name of calculated gradients, such as "dev_all.pt"  |
 | `num_samples_for_eval` | number of samples used for evaluationi                    |
 | `prediction_file`      | path to the prediction results                            |
 | `topk`                 | retrieval number                                          |
