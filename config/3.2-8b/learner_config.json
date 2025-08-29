@@ -1,5 +1,5 @@
 {
-    "base_model_name_or_path": "/liuzyai04/thuir/LLM/Meta-Llama-3.1-8B-Instruct",
+    "base_model_name_or_path": "meta-llama/Llama-3.1-8B-Instruct",
     "init_alpha": 1e-2,
     "alpha_mode": "tie",
     "use_simple_prompt": false,
