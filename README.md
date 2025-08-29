@@ -153,7 +153,7 @@ Run encoding with the following command:
 python src/encode.py \
 	--dataset 2wikimultihopqa \
 	--data_path data/2wikimultihopqa \
-	--model_path [your trained model] \
+	--model_path [your_trained_model] \
 	--topk 3 \
 	--split dev \
 	--start 0 \
@@ -186,11 +186,11 @@ Running inference with the following command:
 
 ```
 python src/inference.py \
-    --model_path [your trained model] \
-    --offline_dir [calculated gradients] \
+    --model_path [your_trained_model] \
+    --offline_dir [calculated_gradients] \
     --grad_file [file_name] \
     --gamma 1 \
-    --prediction_file [path to the saved results] \
+    --prediction_file [path_to_the_generated_results] \
     --num_samples_for_eval 300 \
     --topk 3 \
     --blind_context
