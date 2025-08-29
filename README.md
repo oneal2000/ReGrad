@@ -90,7 +90,7 @@ For larger datasets (e.g., 2WikiMultiHopQA), using all samples at once can be ti
 
 We suggest you to set `start` to 500 for avoiding data leakage(especially for popqa)
 
-For easier training, please name the generated files as `train_{number of samples}.json` (e.g., `train_4000.json`). If all samples are used, name the file `train_all.json`.
+For easier training, please name the generated train sets as `train_{number of samples}.json` (e.g., `train_4000.json`). If all samples are used, name the file `train_all.json`. Meanwhile, name the develop set as `dev.json`.
 
 #### Training Meta-learing Model
 
