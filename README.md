@@ -149,8 +149,6 @@ python encode.py \
 | `start, end ` | Start/End index of samples to process, being none means taking all samples |
 | `output_dir`  | path to the generated data, such as 3.2-1b                   |
 
-`encode_all.sh` has been provided to encode all the four datasets in one time.
-
 All generated gradients are stored in the `offline` folder. The specific location of the gradients files is as follows:
 
 ```

@@ -35,6 +35,7 @@ data/hotpotqa/*.json
 data/popqa/*.json
 data/complexwebquestions/*.json
 data/popqa/*.tsv
+data/dpr/
 data_aug/
 *.zip
 
