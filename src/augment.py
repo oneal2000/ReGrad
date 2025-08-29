@@ -6,7 +6,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from retrieve.retriever import bm25_retrieve
-from root_dir_path import ROOT_DIR
 
 random.seed(42)
 
@@ -119,7 +118,7 @@ def main(args):
         output_dir = os.path.dirname(args.output_file)
         os.makedirs(output_dir, exist_ok=True)
     else:
-        output_dir = os.path.join(ROOT_DIR, "data_aug", args.dataset)
+        output_dir = os.path.join("data_aug", args.dataset)
         os.makedirs(output_dir, exist_ok=True)
 
     print("### Loading dataset ###")

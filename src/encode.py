@@ -9,7 +9,6 @@ from accelerate import Accelerator
 from tqdm import tqdm
 
 from retrieve.retriever import bm25_retrieve
-from root_dir_path import ROOT_DIR
 from Meta import load_Metalearner, get_train_data, compute_gradients
 
 random.seed(42)

@@ -8,7 +8,6 @@ from transformers import GenerationConfig
 from accelerate import Accelerator
 
 from Meta import load_Metalearner, RGModelCreator
-from root_dir_path import ROOT_DIR
 import ICL
 from data import WikiMultiHopQA, HotpotQA, PopQA, ComplexWebQA, MixMultiVal
 

@@ -73,7 +73,7 @@ python src/augment.py \
     --split [train/dev] \
     --start 500 \
     --end 4500 \
-    --output_file ROOT_DIR/data_aug/2wikimultihopqa/train_4000.json
+    --output_file [your_output_path]
 
 ```
 
@@ -123,6 +123,32 @@ Here is the meanings of arguments:
 - `overwrite`: Whether to overwrite the output directory if it exists.
 
 The running parameters of the main experiments are provided in the `configs` folder.
+
+#### Potential Issues
+
+You may occurs the following error when running the training script:
+```
+RuntimeError: "triu_tril_cuda_template" not implemented for 'BFloat16'
+```
+
+Solve it by the following steps:
+- goto the env foler: `cd [your_env_folder]`. It is usually at `[your miniconda_folder]/envs/re_grad`.
+- open the file `lib/python3.10/site-packages/transformers/models/llama/modeling_llama.py`
+- Searching for `triu`, and you will find the following code:
+    ```python
+            if sequence_length != 1:
+                causal_mask = torch.triu(causal_mask, diagonal=1)
+    ```
+- Replace it with the following code:
+    ```python
+            if sequence_length != 1:
+                if dtype == torch.bfloat16:
+                    causal_mask = causal_mask.to(torch.float32)
+                    causal_mask = torch.triu(causal_mask, diagonal=1)
+                    causal_mask = causal_mask.to(device=device, dtype=torch.bfloat16)
+                else:
+                    causal_mask = torch.triu(causal_mask, diagonal=1)
+    ```
 
 ### Calculating Gradients
 
