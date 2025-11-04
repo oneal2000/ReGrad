@@ -1,11 +1,10 @@
 python src/inference.py \
-    --model_path [your_root_path]/outputs/demo \
-        --offline_dir [your_root_path]/offline/demo/top3 \
-        --grad_file dev.pt \
-        --gamma 1 \
-        --prediction_file [your_root_path]/results/demo.json \
-        --num_samples_for_eval 300 \
-        --topk 3 \
-        --blind_context \
-        --domain general
-done
+    --model_path outputs/demo \
+    --offline_dir offline/demo/top3 \
+    --grad_file dev.pt \
+    --gamma 1 \
+    --prediction_file results/demo.json \
+    --num_samples_for_eval 300 \
+    --topk 3 \
+    --blind_context \
+    --domain general
