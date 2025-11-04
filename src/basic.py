@@ -3,7 +3,6 @@ from typing import List, Dict
 
 
 def replace_speical_span(text, contents: Dict[str, str]):
-    # 不用format，而是手动替换。因为format用到的大括号真的太常见了。
     replaced_text = text
     for k, v in contents.items():
         replaced_text = replaced_text.replace(f"{{{k}}}", v)
@@ -39,9 +38,12 @@ class ModelBox:
         """
         raise NotImplementedError
 
-    def predict(self, contents: str | Dict[str, str]) -> str:
+    def predict(self, contents: str | Dict[str, str], choices=None) -> str:
         if isinstance(contents, str):
             contents = {"question": contents}
+        if choices != None:
+            for id, choice in enumerate(choices): 
+                contents[f"c{id}"] = choice
         input = self.infer_template.fill_template(contents)
         return self._predict(input)
 
@@ -61,11 +63,10 @@ class ModelCreator:
     def __init__(self):
         pass
 
-    def _build(self, contents: Dict[str, str]):  # 主要功能实现模块
+    def _build(self, contents: Dict[str, str], **kwargs):
         """
-        需要实现：根据contents生成ModelBox
-        因为修改通常会直接加在基座模型上，所以注意要备份基座模型，后面可能要通过self.recover()恢复。
-        让子类实现。
+        子类需要实现：根据contents生成ModelBox
+        kwargs 可以传额外参数
         """
         raise NotImplementedError
 
@@ -75,7 +76,7 @@ class ModelCreator:
         """
         raise NotImplementedError
 
-    def build(self, contents: str | Dict[str, str]):  # 后面均是对这个方法的重写
+    def build(self, contents: str | Dict[str, str], **kwargs):
         if isinstance(contents, str):
             contents = {"contents": {"context": contents}}
-        return self._build(contents)
+        return self._build(contents, **kwargs)

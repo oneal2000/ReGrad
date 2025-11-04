@@ -6,7 +6,6 @@ from collections import Counter
 
 
 def normalize_answer(s):
-
     def remove_articles(text):
         return re.sub(r"\b(a|an|the)\b", " ", text)
 
@@ -66,10 +65,11 @@ def update_answer(metrics, prediction, gold):  # gold may be str or list[str]
     if not isinstance(gold, list):
         gold = [gold]
 
+    # 若有多个 answer，取最大值为最后结果
     em = max(exact_match_score(prediction, g) for g in gold)
     f1, prec, recall = max(
         (f1_score(prediction, g) for g in gold), key=lambda x: x[0]
-    )  # take the maximum value
+    )  
 
     metrics["em"] += float(em)
     metrics["f1"] += f1
@@ -98,17 +98,15 @@ def eval(prediction, gold_file):  # remove alias file
 
             update_answer(metrics, prediction["answer"][cur_id], dp["answer"])
 
-    # N = len(gold)
     N = num_answers
 
     for k in metrics.keys():
         metrics[k] = round(metrics[k] / N * 100, 2)
 
-    # print(json.dumps(metrics, indent=4))
     return metrics  
 
 
-# 加一个带上小题分的评估
+# 带小题分的评估
 def eval_detailed(prediction, gold_file):
     with open(gold_file) as f:
         gold = json.load(f)
@@ -130,13 +128,11 @@ def eval_detailed(prediction, gold_file):
                 metrics, prediction["answer"][cur_id], dp["answer"]
             )
 
-    # N = len(gold)
     N = num_answers
 
     for k in metrics.keys():
         metrics[k] = metrics[k] / N * 100
 
-    # print(json.dumps(metrics, indent=4))
     return {"metrics": metrics, "detailed": metrics_detailed}
 
 

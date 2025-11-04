@@ -3,6 +3,7 @@ import json
 import random
 import argparse
 import pandas as pd
+import re
 from tqdm import tqdm
 
 from retrieve.retriever import bm25_retrieve
@@ -64,7 +65,6 @@ def load_2wikimultihopqa(data_path, split):
     for did, data in enumerate(dataset):
         ans_id = data["answer_id"]
         val = {
-            # "qid": data["_id"],
             "test_id": did,
             "question": data["question"],
             "answer": aliases[ans_id] if ans_id else data["answer"],
@@ -83,7 +83,6 @@ def load_hotpotqa(data_path, split):
     with open(data_path, "r") as fin:
         dataset = json.load(fin)
     new_dataset = []
-    # type_to_dataset = {}
     for did, data in enumerate(dataset):
         val = {
             "test_id": did,
@@ -93,6 +92,135 @@ def load_hotpotqa(data_path, split):
         new_dataset.append(val)
     ret = {split: new_dataset}
     return ret
+
+
+def load_pubmedqa(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        if split == "dev":
+            answer = re.search(r'(?<=The final decision is:)\s*(yes|no)\b', data["answer"], re.I).group(1)
+        else:
+            answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_medqa(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+def load_bioasq(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_lhf(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"].lower()
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_housingqa(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"].lower()
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_casehold(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "choices":  data["choices"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
 
 
 def load_default_format_data(data_path):
@@ -148,16 +276,15 @@ def main(args):
         pbar = tqdm(total=len(dataset) * args.topk)
 
         for data in dataset:
-            # passages = bm25_retrieve(data["question"], topk=args.topk+10)
-            passages = bm25_retrieve(data["question"], topk=args.topk)
+            passages, scores = bm25_retrieve(data["question"], topk=args.topk)
+            # print(scores)
             final_passages = []
-            # data["augment"] = []
             for psg in passages:
                 final_passages.append(psg)
                 pbar.update(1)
             data["passages"] = final_passages
             ret.append(data)
-            # print(data)
+            
         with open(output_file, "w") as fout:
             json.dump(ret, fout, indent=4)
 
@@ -174,13 +301,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--end", type=int, default=None, help="End index of samples to process"
     )
-
     parser.add_argument(
-        "--output_file",
-        type=str,
-        default=None,
+        "--output_file", type=str, default=None,
     )
-
+    
     args = parser.parse_args()
     print(args)
     main(args)

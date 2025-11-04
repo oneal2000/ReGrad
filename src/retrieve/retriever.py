@@ -6,6 +6,7 @@ import uuid
 import numpy as np
 import torch
 import faiss
+import difflib
 # import logging
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel
@@ -31,6 +32,7 @@ class BM25:
         **search_engine_kwargs,
     ):
         self.tokenizer = tokenizer
+        self.index_name = index_name
         # load index
         assert engine in {'elasticsearch', 'bing'}
         if engine == 'elasticsearch':
@@ -41,19 +43,16 @@ class BM25:
 
     def retrieve(
         self,
-        queries: List[str],  # (bs,)
+        queries: List[str],
         topk: int = 1,
         max_query_length: int = None,
     ):
         assert topk <= self.max_ret_topk
-        device = None
         bs = len(queries)
 
         # truncate queries
         if max_query_length:
-            ori_ps = self.tokenizer.padding_side
-            ori_ts = self.tokenizer.truncation_side
-            # truncate/pad on the left side
+            ori_ps, ori_ts = self.tokenizer.padding_side, self.tokenizer.truncation_side
             self.tokenizer.padding_side = 'left'
             self.tokenizer.truncation_side = 'left'
             tokenized = self.tokenizer(
@@ -62,36 +61,54 @@ class BM25:
                 padding=True,
                 max_length=max_query_length,
                 add_special_tokens=False,
-                return_tensors='pt')['input_ids']
+                return_tensors='pt'
+            )['input_ids']
             self.tokenizer.padding_side = ori_ps
             self.tokenizer.truncation_side = ori_ts
             queries = self.tokenizer.batch_decode(tokenized, skip_special_tokens=True)
 
         # retrieve
         results: Dict[str, Dict[str, Tuple[float, str]]] = self.retriever.retrieve(
-            None, dict(zip(range(len(queries)), queries)), disable_tqdm=True)
+            None, dict(zip(range(len(queries)), queries)), disable_tqdm=True
+        )
 
         # prepare outputs
-        docids: List[str] = []
-        docs: List[str] = []
+        docids, docs, scores = [], [], []
         for qid, query in enumerate(queries):
-            _docids: List[str] = []
-            _docs: List[str] = []
+            _docids, _docs, _scores = [], [], []
+            seen_texts = [] if self.index_name == "med" else None  
             if qid in results:
                 for did, (score, text) in results[qid].items():
+                    if seen_texts is not None:
+                        duplicate = False
+                        for prev in seen_texts:
+                            sim = difflib.SequenceMatcher(None, text, prev).ratio()
+                            if sim >= 0.9:   
+                                duplicate = True
+                                break
+                        if duplicate:
+                            continue
+                        seen_texts.append(text)
+
                     _docids.append(did)
                     _docs.append(text)
+                    _scores.append(score)
                     if len(_docids) >= topk:
                         break
-            if len(_docids) < topk:  # add dummy docs
+
+            if len(_docids) < topk:
                 _docids += [get_random_doc_id() for _ in range(topk - len(_docids))]
                 _docs += [''] * (topk - len(_docs))
+                _scores += [0.0] * (topk - len(_scores))
+
             docids.extend(_docids)
             docs.extend(_docs)
+            scores.extend(_scores)
 
-        docids = np.array(docids).reshape(bs, topk)  # (bs, topk)
-        docs = np.array(docs).reshape(bs, topk)  # (bs, topk)
-        return docids, docs
+        docids = np.array(docids).reshape(bs, topk)
+        docs = np.array(docs).reshape(bs, topk)
+        scores = np.array(scores).reshape(bs, topk)
+        return docids, docs, scores  # add scores for exploration
 
 
 def bm25search_search(self, corpus: Dict[str, Dict[str, str]], queries: Dict[str, str], top_k: int, *args, **kwargs) -> Dict[str, Dict[str, float]]:
@@ -194,19 +211,22 @@ ElasticSearch.hit_template = elasticsearch_hit_template
 
 
 tokenizer = AutoTokenizer.from_pretrained(
-    "/liuzyai04/thuir/LLM/Meta-Llama-3-8B-Instruct"
+    "/data-share/kangjiacheng/LLM/Meta-Llama-3-8B-Instruct"
 )
 tokenizer.pad_token = tokenizer.eos_token
 bm25_retriever = BM25(
     tokenizer = tokenizer, 
     index_name = "wiki", 
+    # index_name = "med",
+    # index_name =  "law",
     engine = "elasticsearch",
 )
 
 def bm25_retrieve(question, topk):
-    docs_ids, docs = bm25_retriever.retrieve(
+    doc_ids, docs, scores = bm25_retriever.retrieve(
         [question], 
         topk=topk, 
         max_query_length=256
     )
-    return docs[0].tolist()
+    return docs[0].tolist(), scores[0].tolist()
+

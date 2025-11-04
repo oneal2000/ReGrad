@@ -4,6 +4,7 @@ import random
 import argparse
 import pandas as pd
 import torch
+import re
 from accelerate import Accelerator
 
 from tqdm import tqdm
@@ -98,6 +99,135 @@ def load_hotpotqa(data_path, split):
     return ret
 
 
+def load_pubmedqa(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        if split == "dev":
+            answer = re.search(r'(?<=The final decision is:)\s*(yes|no)\b', data["answer"], re.I).group(1)
+        else:
+            answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_medqa(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+def load_bioasq(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_lhf(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"].lower()
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_housingqa(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"].lower()
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
+def load_casehold(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "choices":  data["choices"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
+
+
 def load_default_format_data(data_path):
     filename = data_path.split("/")[-1]
     assert filename.endswith(".json"), f"Need json data: {data_path}"
@@ -144,8 +274,18 @@ def main(args):
 
         all_grads = {}  
 
-        for data in dataset:
-            passages = bm25_retrieve(data["question"], topk=args.topk)
+        for i, data in enumerate(dataset):
+            passages, _ = bm25_retrieve(data["question"], topk=args.topk)
+            if args.mixed > 0.0:
+                num_irrel = int(args.topk * args.mixed)
+                num_rel = args.topk - num_irrel
+
+                passages_rel = passages[:num_rel]
+                other = dataset[(i + 1) % len(dataset)]
+                passages_irrel, _ = bm25_retrieve(other["question"], topk=num_irrel)
+                passages = passages_rel + passages_irrel
+                # print(passages)
+
             for idx, psg in enumerate(passages):
                 grad_id = f"{data['test_id']}_{idx}"
 
@@ -160,9 +300,11 @@ def main(args):
 
                 pbar.update(1)
 
-        save_dir = os.path.join("offline", f"top{args.topk}", args.output_dir, args.dataset)
+        save_dir = os.path.join(
+            "offline", args.output_dir, f"top{args.topk}", args.dataset
+        )
         os.makedirs(save_dir, exist_ok=True)
-        torch.save(all_grads, os.path.join(save_dir, f"{filename}_all.pt"))
+        torch.save(all_grads, os.path.join(save_dir, f"{args.output_file}.pt"))
 
 
 if __name__ == "__main__":
@@ -170,16 +312,12 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, required=True)
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument(
-        "--model_path",
-        type=str,
-        required=True,
+        "--model_path", type=str, required=True,
     )  
     parser.add_argument(
-        "--output_dir", type=str
+        "--output_dir", type=str, required=True,
     )
-    # parser.add_argument(
-    #     "--sample", type=int, default=None, help="If None, load all samples"
-    # )
+    parser.add_argument("--output_file", type=str)
     parser.add_argument("--topk", type=int, default=3)
     parser.add_argument("--split", type=str, default="train", help="train/dev/*.json")
     parser.add_argument(
@@ -188,7 +326,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--end", type=int, default=None, help="End index of samples to process"
     )
-
+    parser.add_argument("--mixed", type=float, default=0.0)  # 0~1, 表示替换为无关文档的比例
     args = parser.parse_args()
     print(args)
     main(args)

@@ -40,29 +40,27 @@ from peft import get_peft_config, get_peft_model
 from accelerate import Accelerator
 
 from basic import ModelCreator
-from data import (
-    WikiMultiHopQA,
-    ComplexWebQA,
-    HotpotQA,
-    PopQA,
-    mix_datasets,
-    MixMultiVal,
-)
+from data import WikiMultiHopQA, ComplexWebQA, HotpotQA, PopQA, mix_datasets, MixMultiVal, PubMedQA, MedQA, BioASQ, MixMultiMed, HousingQA, CaseHold, LHF, MixMultiLaw
 import ICL
 
 
 def get_train_data(tokenizer, context, max_len=1024, device=None):
     train_data = tokenizer(
         context, return_tensors="pt", max_length=max_len, truncation=True
-    )  # pt: pytorch tensor
+    )  
     train_data["labels"] = train_data["input_ids"]
     if device:
         train_data = train_data.to(device)
     return train_data
 
 
-def get_val_data(tokenizer, qas, device=None, context=None, use_simple_prompt=True):
+def get_val_data(tokenizer, qas, choices=None, dataset=None, device=None, context=None, use_simple_prompt=True):
     l = []
+    ch = {}
+    if choices != None:
+        for id,choice in enumerate(choices):
+            ch[f"c{id}"] = choice
+
     for question, answer in qas:
         if answer is None:
             answer = ""
@@ -72,9 +70,19 @@ def get_val_data(tokenizer, qas, device=None, context=None, use_simple_prompt=Tr
                     context=context
                 ) + ICL.simple_ICLprompt_question.format(question=question)
             else:
-                prefix = ICL.ICLprompt_context.format(
-                    context=context
-                ) + ICL.ICLprompt_question.format(question=question)
+                if dataset in ["lhf","pubmedqa","bioasq","housingqa"]:  # yes/no datasets
+                    prefix = ICL.ICLprompt_context_yn + ICL.ICLprompt_question.format(
+                    question=question
+                )
+                elif dataset in ["casehold"]:  # multiple choices datasets
+                    ch["question"] = question
+                    prefix = ICL.ICLprompt_context_5choices + ICL.ICLprompt_question_5choices.format(
+                    **ch)
+                    # print(prefix)
+                else:
+                    prefix = ICL.ICLprompt_context.format(
+                        context=context
+                    ) + ICL.ICLprompt_question.format(question=question)
         else:
             if use_simple_prompt:
                 prefix = (
@@ -82,9 +90,18 @@ def get_val_data(tokenizer, qas, device=None, context=None, use_simple_prompt=Tr
                     + ICL.simple_ICLprompt_question.format(question=question)
                 )
             else:
-                prefix = ICL.ICLprompt_context_blind + ICL.ICLprompt_question.format(
-                    question=question
+                if dataset in ["lhf","pubmedqa","bioasq","housingqa"]:
+                    prefix = ICL.ICLprompt_context_blind_yn + ICL.ICLprompt_question.format(
+                        question=question
                 )
+                elif dataset in ["casehold"]:
+                    ch["question"] = question
+                    prefix = ICL.ICLprompt_context_blind_5choices + ICL.ICLprompt_question_5choices.format(**ch)
+                    # print(prefix)
+                else:
+                    prefix = ICL.ICLprompt_context_blind + ICL.ICLprompt_question.format(
+                        question=question
+                    )
         prefix_tokenized = tokenizer(
             prefix, return_tensors="pt", add_special_tokens=True
         )
@@ -109,7 +126,7 @@ def get_val_data(tokenizer, qas, device=None, context=None, use_simple_prompt=Tr
                 ],
                 dim=1,
             ),
-        }  # concatenate prefix and answer together
+        }  
         l.append(combined)
     from torch.nn.utils.rnn import pad_sequence
 
@@ -125,7 +142,7 @@ def get_val_data(tokenizer, qas, device=None, context=None, use_simple_prompt=Tr
         "labels": pad_sequence(
             [item["labels"][0] for item in l],
             batch_first=True,
-            padding_value=-100,  # ignored
+            padding_value=-100, 
         ),
     }
     if device:
@@ -138,20 +155,19 @@ def tokenize_task(
     tokenizer, data, device=None, use_simple_prompt=True, max_context_len=1024
 ):
     return {
-        # "train_data": get_train_data(
-        #     tokenizer, data["context"], device=device, max_len=max_context_len
-        # ),
         "train_data": [
             get_train_data(tokenizer, context, device=device, max_len=max_context_len)
-            for context in data["context"]  # now a list of 3 passages
+            for context in data["context"]  
         ],
         "val_data": get_val_data(
             tokenizer,
             data["qas"],
+            data["choices"] if data["dataset"] == "casehold" else None,
+            data["dataset"],
             device=device,
             context=None,
             use_simple_prompt=use_simple_prompt,
-        ),  
+        ),
     }
 
 
@@ -266,7 +282,7 @@ def load_Metalearner(dir: str, device=None):
                     "down_proj",
                 ],
             }
-        )  # fall back to default
+        )  
     learner_config_file = os.path.join(dir, "learner_config.json")
     if os.path.exists(learner_config_file):
         with open(learner_config_file, "r") as f:
@@ -305,11 +321,15 @@ def load_Metalearner(dir: str, device=None):
     learner = MetaLearner(model, tokenizer, config=learner_config)
     learner.load_state_dict(state_dict, strict=False)
     return learner
-
+    
 
 class MetaModelCreator(ModelCreator):
     def __init__(
-        self, learner, generation_config=None, blind_context=True, device=None
+        self,
+        learner,
+        generation_config=None,
+        blind_context=True,
+        device=None,
     ):
         super().__init__()
         self.learner = learner
@@ -319,8 +339,7 @@ class MetaModelCreator(ModelCreator):
 
     def _build(self, contents=None):
         device = self.device if self.device else next(self.learner.parameters()).device
-
-        passages = contents["contents"]["context"]  # list of 3 passages
+        passages = contents["contents"]["context"]  
 
         grad_list = []
         for context in passages:
@@ -333,18 +352,16 @@ class MetaModelCreator(ModelCreator):
             grad = compute_gradients(self.learner, train_data, create_graph=False)
             grad_list.append(grad)
 
+        param_dict = dict(self.learner.base_model.named_parameters())
         merged_named_parameters = OrderedDict()
-        param_dict = dict(self.learner.base_model.named_parameters()) 
 
         for key in grad_list[0].keys():
             grad_sum = sum(g[key] for g in grad_list) 
-
             alpha = (
                 self.learner.alpha.to(grad_sum.device)
                 if self.learner.config.alpha_mode in ["same", "fix"]
                 else self.learner.alpha[key].to(grad_sum.device)
             )
-
             if param_dict[key].requires_grad:
                 merged_named_parameters[key] = param_dict[key] - alpha * grad_sum
             else:
@@ -353,14 +370,11 @@ class MetaModelCreator(ModelCreator):
         self.learner.adapt(merged_named_parameters)
 
         contents["contents"]["context"] = "\n".join(passages)
-        icl_contents = {
-            "context": contents["contents"]["context"]
-        }  # 保持与原本格式一致
 
         return ICL.ICLModelBox(
             self.learner.base_model,
             self.learner.tokenizer,
-            contents=icl_contents,
+            contents=contents,
             generation_config=self.generation_config,
             blind_context=self.blind_context,
             use_simple=self.learner.config.use_simple_prompt,
@@ -369,10 +383,9 @@ class MetaModelCreator(ModelCreator):
 
     def recover(self):
         self.learner.recover()
-        # torch.cuda.empty_cache()
 
 
-class RGModelCreator(ModelCreator):
+class RGModelCreator(ModelCreator):  
     def __init__(
         self,
         learner,
@@ -398,6 +411,7 @@ class RGModelCreator(ModelCreator):
         dataset = contents["contents"]["dataset"]
         test_id = contents["contents"]["test_id"]
         passages = contents["contents"]["context"]
+        passages = passages[:self.topk]  
 
         # 如果该数据集的梯度还没加载过，就先加载
         if dataset not in self.grad_store:
@@ -409,7 +423,7 @@ class RGModelCreator(ModelCreator):
             )
             self.grad_store[dataset] = torch.load(
                 grad_file_path, map_location="cpu"
-            )  # first at cpu
+            ) 
 
         dataset_grads = self.grad_store[dataset]
 
@@ -421,42 +435,33 @@ class RGModelCreator(ModelCreator):
                     f"Gradient not found for grad_id: {grad_id} in dataset: {dataset}"
                 )
             grad_list.append(dataset_grads[grad_id])
-            # logger.debug(f"[Grad] dataset={dataset} grad_id={grad_id} loaded.")
 
-        # merge gradients
         device = self.device if self.device else next(self.learner.parameters()).device
         merged_params = OrderedDict()
-        state_dict = dict(self.learner.base_model.named_parameters()) 
+        param_dict = dict(self.learner.base_model.named_parameters())
 
         for key in grad_list[0].keys():
             grad_sum = sum(g[key].to(device) for g in grad_list) 
-
-            # only Lora
-            if state_dict[key].requires_grad:
-                grad_float = grad_sum.float().to(device)
-                alpha = (
-                    self.learner.alpha.to(grad_float.device)
-                    if self.learner.config.alpha_mode in ["same", "fix"]
-                    else self.learner.alpha[key].to(grad_float.device)
-                )
+            grad_val = grad_sum.float().to(device)
+            alpha = (
+                self.learner.alpha.to(grad_val.device)
+                if self.learner.config.alpha_mode in ["same", "fix"]
+                else self.learner.alpha[key].to(grad_val.device)
+            )
+            if param_dict[key].requires_grad:
                 merged_params[key] = (
-                    state_dict[key].to(device) - self.gamma * alpha * grad_float
+                    param_dict[key].to(device) - self.gamma * alpha * grad_val
                 )
             else:
-                merged_params[key] = state_dict[key].to(device)
+                merged_params[key] = param_dict[key].to(device)
 
         self.learner.adapt(merged_params)
 
-        contents["contents"]["context"] = "\n".join(passages)  # concatenate the three passages
-        icl_contents = {
-            "context": contents["contents"]["context"]
-        }  # 保持与原本格式一致
-        # print(icl_contents)
-
+        contents["contents"]["context"] = "\n".join(passages)
         return ICL.ICLModelBox(
             self.learner.base_model,
             self.learner.tokenizer,
-            contents=icl_contents,
+            contents=contents,
             generation_config=self.generation_config,
             blind_context=self.blind_context,
             use_simple=self.learner.config.use_simple_prompt,
@@ -470,7 +475,7 @@ class RGModelCreator(ModelCreator):
 @dataclass
 class TrainArgs:
     meta_batch_size: int = 16
-    meta_lr: float = 2e-4  # used in outer loop
+    meta_lr: float = 2e-4 
     num_epochs: int = 4
     logging_steps: int = 40
     eval_steps: int = 200
@@ -480,6 +485,7 @@ class TrainArgs:
     eval_only_loss: bool = False
     train_with_only_related: bool = True
     eval_with_only_related: bool = True
+    outer_loss: bool = True
     mixed_precision: str = "fp16"
     lr_scheduler: str = "CosineAnnealingLR"
     max_context_len: int = 1024
@@ -493,7 +499,7 @@ class TrainArgs:
 
 def compute_gradients(learner: MetaLearner, train_data, create_graph=True):
     """
-    Calculate gradients
+    计算文档对应的梯度
     """
     learner.train()
 
@@ -508,9 +514,7 @@ def compute_gradients(learner: MetaLearner, train_data, create_graph=True):
         if p.requires_grad
     )
 
-    grads = torch.autograd.grad(
-        loss, named_params.values(), create_graph=create_graph
-    )
+    grads = torch.autograd.grad(loss, named_params.values(), create_graph=create_graph)
 
     if create_graph:
         # 保留计算图，用于二阶梯度（meta-learning 训练）
@@ -518,7 +522,7 @@ def compute_gradients(learner: MetaLearner, train_data, create_graph=True):
             (name, grad.float()) for (name, _), grad in zip(named_params.items(), grads)
         )
     else:
-        # 不保留计算图，用于推理 / 梯度存储
+        # 不保留计算图，用于推理/梯度存储
         with torch.no_grad():
             grad_dict = OrderedDict(
                 (name, grad.float())
@@ -528,60 +532,22 @@ def compute_gradients(learner: MetaLearner, train_data, create_graph=True):
     return grad_dict
 
 
-def train_single_task(learner: MetaLearner, train_data, create_graph=True):
-    """
-    Calculate adapted_named_parameters
-    """
-    learner.train()
+def compute_loss(learner: MetaLearner, task, outer_loss=True):
+    grad_list = []
+    ntp_losses = []
 
-    with torch.backends.cuda.sdp_kernel(
-        enable_flash=not create_graph, enable_math=True, enable_mem_efficient=True
-    ):
-        loss = learner(**train_data).loss
+    for train_data in task["train_data"]:
+        outputs = learner(**train_data)
+        ntp_losses.append(outputs.loss)
+        grad = compute_gradients(learner, train_data)
+        grad_list.append(grad)
 
-    named_parameters_requires_grad = OrderedDict(
-        {
-            name: para
-            for name, para in learner.base_model.named_parameters()
-            if para.requires_grad
-        }
-    )
-    grads = torch.autograd.grad(
-        loss, named_parameters_requires_grad.values(), create_graph=create_graph
-    )  # calculate grad here
+    # 直接返回平均 NTP loss 更新参数
+    if not outer_loss:
+        return sum(ntp_losses) / len(ntp_losses)
 
-    adapted_named_parameters = OrderedDict()
-    if create_graph:
-        for (key, val), grad in zip(named_parameters_requires_grad.items(), grads):
-            grad_float = grad.float()
-            alpha = (
-                learner.alpha.to(grad_float.device)
-                if learner.config.alpha_mode in ["same", "fix"]
-                else learner.alpha[key]  # a param
-            )
-            adapted_named_parameters[key] = val - alpha * grad_float
-    else:
-        with torch.no_grad():
-            for (key, val), grad in zip(named_parameters_requires_grad.items(), grads):
-                grad_float = grad.float()
-                alpha = (
-                    learner.alpha.to(grad_float.device)
-                    if learner.config.alpha_mode in ["same", "fix"]
-                    else learner.alpha[key]
-                )
-                adapted_named_parameters[key] = val - alpha * grad_float
-
-    return adapted_named_parameters  # updated params
-
-
-def compute_loss(learner: MetaLearner, task):
-    grad_list = [
-        compute_gradients(learner, train_data)  # 对每篇文档分别算梯度
-        for train_data in task["train_data"]
-    ]
-
+    param_dict = dict(learner.base_model.named_parameters())
     merged_named_parameters = OrderedDict()
-    param_dict = dict(learner.base_model.named_parameters())  
 
     for key in grad_list[0].keys():
         grad_sum = sum(g[key] for g in grad_list) 
@@ -590,18 +556,15 @@ def compute_loss(learner: MetaLearner, task):
             if learner.config.alpha_mode in ["same", "fix"]
             else learner.alpha[key].to(grad_sum.device)
         )
-
         if param_dict[key].requires_grad:
             merged_named_parameters[key] = param_dict[key] - alpha * grad_sum
         else:
             merged_named_parameters[key] = param_dict[key]
-
+        
     outputs = learner.forward(
-        **task["val_data"],
-        adapted_named_parameters=merged_named_parameters
+        **task["val_data"], adapted_named_parameters=merged_named_parameters
     )
-    loss = outputs.loss
-    return loss
+    return outputs.loss
 
 
 def eval(
@@ -625,8 +588,7 @@ def eval(
     return val_set.evaluate(results["predictions"])
 
 
-# outer loop
-def train(  
+def train(
     learner: MetaLearner,
     train_set: Dataset,
     val_set,
@@ -657,10 +619,9 @@ def train(
     meta_optimizer = optim.AdamW(
         learner.parameters(),
         lr=train_args.meta_lr,
-    )  # TODO: 探索其他优化器
+    )  
 
     total_steps = len(train_dataloader) * train_args.num_epochs
-    # 预热阶段
     warmup_steps = int(total_steps * 0.1)
     warmup_scheduler = optim.lr_scheduler.LinearLR(
         meta_optimizer, start_factor=0.01, end_factor=1.0, total_iters=warmup_steps
@@ -678,7 +639,6 @@ def train(
             start_factor=1.0,
             end_factor=0.0,
         )
-    # 组合调度器
     lr_scheduler = optim.lr_scheduler.SequentialLR(
         meta_optimizer,
         schedulers=[warmup_scheduler, main_scheduler],
@@ -697,7 +657,7 @@ def train(
     best_steps = 0
 
     def eval_and_save():
-        nonlocal accelerator, best_score, best_results, best_steps, train_args  # 声明使用外部变量
+        nonlocal accelerator, best_score, best_results, best_steps, train_args  
         logger.info("Evaluating ...")
         results = eval(
             learner=learner,
@@ -732,29 +692,24 @@ def train(
                 )
 
     meta_optimizer.zero_grad(set_to_none=True)
-    # with accelerator.autocast(): # 不要加
     for epoch in range(train_args.num_epochs):
         for batch in tqdm(train_dataloader, desc=f"Epoch {epoch}"):
             meta_loss = 0
-            for task in batch:  # for each task
-                loss = compute_loss(learner, task) / len(batch)  
+            for task in batch:  
+                loss = compute_loss(learner, task, train_args.outer_loss) / len(batch)
                 meta_loss += loss.item()
-                accelerator.backward(loss)  # 用算出来的损失更新参数
+                accelerator.backward(loss)  
                 del loss
             torch.nn.utils.clip_grad_norm_(
                 learner.parameters(), max_norm=0.5
             )  # 添加梯度裁剪
-            # 神奇的是，将梯度裁剪改为accelerator的版本后，效果将会差很多。
             meta_optimizer.step()
             meta_optimizer.zero_grad(set_to_none=True)
 
-            # 更新学习率调度器
             lr_scheduler.step()
 
             avg_loss += meta_loss
-
             steps_count += 1
-
             if steps_count % train_args.logging_steps == 0:
                 avg_loss /= train_args.logging_steps
                 logger.info("Avg train loss: {}".format(avg_loss))
@@ -791,29 +746,26 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--peft_config_file"
-    )
+    parser.add_argument("--peft_config_file")
     parser.add_argument("--train_args_file")
-    parser.add_argument(
-        "--generation_config_file"
-    )
-    parser.add_argument(
-        "--learner_config_file"
-    )
+    parser.add_argument("--generation_config_file")
+    parser.add_argument("--learner_config_file")
     parser.add_argument("--output_dir", default="outputs/sample")
     parser.add_argument("--overwrite", action="store_true")
-    # parser.add_argument("--copyhot", action="store_true")
     parser.add_argument(
-        "--train_sample",
+        "--domain",
+        choices=['general', 'med', 'law'],
+        type=str,
+        default='general'
+    )
+    parser.add_argument(
+        "--train_set_name",
         type=str,
     )
-    # parser.add_argument(
-    #     "--topk",
-    #     type=int,
-    #     default=3,
-    # )
-
+    parser.add_argument(
+        "--dev_set_name",
+        type=str,
+    )
     args = parser.parse_args()
 
     with open(args.peft_config_file, "r") as f:
@@ -837,40 +789,62 @@ if __name__ == "__main__":
         json.dump(generation_config.to_dict(), f, indent=4)
     with open(os.path.join(args.output_dir, "learner_config.json"), "w") as f:
         json.dump(learner_config.__dict__, f, indent=4)
-        # record args at output_dir
 
-    # 用train_sample指定样本数
-    train_set_wiki = WikiMultiHopQA(
-        gold_file=f"data_aug/2wikimultihopqa/train_{args.train_sample}.json",
-    ).derive_training_dataset()
-    train_set_complexweb = ComplexWebQA(
-        gold_file=f"data_aug/complexwebquestions/train_{args.train_sample}.json",
-    ).derive_training_dataset()
-    train_set_pop = PopQA(
-        gold_file=f"data_aug/popqa/train_{args.train_sample}.json",
-    ).derive_training_dataset()
-    train_set_hotpot = HotpotQA(
-        gold_file=f"data_aug/hotpotqa/train_{args.train_sample}.json",
-    ).derive_training_dataset()
-    # if args.copyhot:
-    #     train_set = mix_datasets([train_set_wiki, train_set_complexweb,train_set_pop, train_set_hotpot, train_set_hotpot])  # copy hotpotqa
-    # else:
-    train_set = mix_datasets([train_set_wiki, train_set_complexweb,train_set_pop, train_set_hotpot])  
+    if args.domain == "general":
+        train_set_wiki = WikiMultiHopQA(
+            gold_file=f"data_aug/2wikimultihopqa/{args.train_set_name}.json",
+        ).derive_training_dataset()
+        train_set_complexweb = ComplexWebQA(
+            gold_file=f"data_aug/complexwebquestions/{args.train_set_name}.json",
+        ).derive_training_dataset()
+        train_set_pop = PopQA(
+            gold_file=f"data_aug/popqa/{args.train_set_name}.json",
+        ).derive_training_dataset()
+        train_set_hotpot = HotpotQA(
+            gold_file=f"data_aug/hotpotqa/{args.train_set_name}.json",
+        ).derive_training_dataset()
+        train_set = mix_datasets(
+            [train_set_wiki, train_set_complexweb, train_set_pop, train_set_hotpot]
+        )
 
-    val_set = MixMultiVal(
-        WikiMultiHopQA(
-            gold_file=f"data_aug/2wikimultihopqa/dev.json",
-        ).derive_trunc_dataset(),
-        ComplexWebQA(
-            gold_file=f"data_aug/complexwebquestions/dev.json",
-        ).derive_trunc_dataset(),
-        HotpotQA(
-            gold_file=f"data_aug/hotpotqa/dev.json",
-        ).derive_trunc_dataset(),
-        PopQA(
-            gold_file=f"data_aug/popqa/dev.json",
-        ).derive_trunc_dataset(),
-    )
+        val_set = MixMultiVal(
+            WikiMultiHopQA(
+                gold_file=f"data_aug/2wikimultihopqa/{args.dev_set_name}.json",
+            ).derive_trunc_dataset(),
+            ComplexWebQA(
+                gold_file=f"data_aug/complexwebquestions/{args.dev_set_name}.json",
+            ).derive_trunc_dataset(),
+            HotpotQA(
+                gold_file=f"data_aug/hotpotqa/{args.dev_set_name}.json",
+            ).derive_trunc_dataset(),
+            PopQA(
+                gold_file=f"data_aug/popqa/{args.dev_set_name}.json",
+            ).derive_trunc_dataset(),
+        )
+
+    elif args.domain == "med":
+        train_pub = PubMedQA(gold_file=f"data_aug/pubmedqa/{args.train_set_name}.json").derive_training_dataset()
+        train_med = MedQA(gold_file=f"data_aug/medqa/{args.train_set_name}.json").derive_training_dataset()
+        train_bio = BioASQ(gold_file=f"data_aug/bioasq/{args.train_set_name}.json").derive_training_dataset()
+        train_set = mix_datasets([train_pub, train_med, train_bio])
+
+        val_set = MixMultiMed(
+            PubMedQA(gold_file=f"data_aug/pubmedqa/{args.dev_set_name}.json").derive_trunc_dataset(),
+            MedQA(gold_file=f"data_aug/medqa/{args.dev_set_name}.json").derive_trunc_dataset(),
+            BioASQ(gold_file=f"data_aug/bioasq/{args.dev_set_name}.json").derive_trunc_dataset(),
+        )
+
+    else:
+        train_cas = CaseHold(gold_file=f"data_aug/casehold/{args.train_set_name}.json").derive_training_dataset()
+        train_lhf = LHF(gold_file=f"data_aug/lhf/{args.train_set_name}.json").derive_training_dataset()
+        train_hou = HousingQA(gold_file=f"data_aug/housingqa/{args.train_set_name}.json").derive_training_dataset()
+        train_set = mix_datasets([train_cas, train_lhf, train_hou])
+
+        val_set = MixMultiLaw(
+            CaseHold(gold_file=f"data_aug/casehold/{args.dev_set_name}.json").derive_trunc_dataset(),
+            LHF(gold_file=f"data_aug/lhf/{args.dev_set_name}.json").derive_trunc_dataset(),
+            HousingQA(gold_file=f"data_aug/housingqa/{args.dev_set_name}.json").derive_trunc_dataset(),
+        )
 
     model_name_or_path = learner_config.base_model_name_or_path
     logger.info(f"Loading {model_name_or_path} for Meta ...")

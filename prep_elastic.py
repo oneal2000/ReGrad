@@ -1,6 +1,7 @@
 import argparse
 import glob
 import time
+import json
 import csv
 from tqdm import tqdm
 from src.retrieve.beir.beir.retrieval.search.lexical.elastic_search import ElasticSearch
@@ -23,39 +24,57 @@ def build_elasticsearch(
     }
     es = ElasticSearch(config)
 
-    # create index
     print(f'create index {index_name}')
     es.delete_index()
     time.sleep(5)
     es.create_index()
 
-    # generator
     def generate_actions():
         for beir_corpus_file in beir_corpus_files:
-            with open(beir_corpus_file, 'r') as fin:
-                reader = csv.reader(fin, delimiter='\t')
-                header = next(reader)  # skip header
-                for row in reader:
-                    _id, text, title = row[0], row[1], row[2]
-                    es_doc = {
-                        '_id': _id,
-                        '_op_type': 'index',
-                        'refresh': 'wait_for',
-                        config['keys']['title']: title,
-                        config['keys']['body']: text,
-                    }
-                    yield es_doc
+            # 处理.jsonl文件
+            if beir_corpus_file.endswith(".jsonl"):
+                with open(beir_corpus_file, 'r', encoding='utf-8') as fin:
+                    for line in fin:
+                        doc = json.loads(line.strip())
+                        _id = doc.get('_id', None)
+                        text = doc.get('text', '')
+                        title = doc.get('title', '')
+                        es_doc = {
+                            '_id': _id,
+                            '_op_type': 'index',
+                            'refresh': 'wait_for',
+                            config['keys']['title']: title,
+                            config['keys']['body']: text,
+                        }
+                        yield es_doc
+            # 其他类型文件，如.tsv
+            else:  
+                with open(beir_corpus_file, 'r', encoding='utf-8') as fin:
+                    reader = csv.reader(fin, delimiter='\t')
+                    header = next(reader)  
+                    for row in reader:
+                        if len(row) < 3:
+                            continue
+                        _id, text, title = row[0], row[1], row[2]
+                        es_doc = {
+                            '_id': _id,
+                            '_op_type': 'index',
+                            'refresh': 'wait_for',
+                            config['keys']['title']: title,
+                            config['keys']['body']: text,
+                        }
+                        yield es_doc
 
-    # index
     progress = tqdm(unit='docs')
     es.bulk_add_to_index(
         generate_actions=generate_actions(),
-        progress=progress)
+        progress=progress
+    )
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', type=str, default=None, help='input file')
+    parser.add_argument('--data_path', type=str, default=None, help='input file pattern')
     parser.add_argument("--index_name", type=str, default=None, help="index name")
     args = parser.parse_args()
     build_elasticsearch(args.data_path, index_name=args.index_name)
