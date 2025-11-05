@@ -58,6 +58,15 @@ python prep_elastic.py --data_path data/med/pubmed.jsonl --index_name med
 python prep_elastic.py --data_path data/law/pile-of-law-chunked.jsonl --index_name law
 ```
 
+As an example, after correctly building the wiki index, your terminal should display messages similar to the following:
+
+```
+#files 1
+create index wiki
+0docs [00:00, ?docs/s]              
+index 'wiki' has been successfully built.
+```
+
 #### 2. Download dataset
 
 For 2WikiMultihopQA:
@@ -69,6 +78,7 @@ For HotpotQA:
 ```bash
 mkdir -p data/hotpotqa
 wget -P data/hotpotqa/ http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_distractor_v1.json
+wget -P data/hotpotqa/ http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_train_v1.1.json
 ```
 
 For PopQA:
@@ -138,6 +148,18 @@ For popqa,  When generating the train set, `start` is suggested to be set to 500
 
 - For `lhf`, `housingqa`, `casehold`: set `index_name = "law"`
 
+Taking generating development set for 2WikiMultihopQA as an example, after run `scripts/augment_2wikimultihopqa_top3.sh`,  your terminal should display messages similar to the following:
+
+```
+Namespace(dataset='2wikimultihopqa', data_path='data/2wikimultihopqa', topk=3, split='dev', start=0, end=300, output_file='data_aug/2wikimultihopqa/dev.json')
+### Loading dataset ###
+loading dataset from data/2wikimultihopqa
+### Solving dev ###
+100%|███████████████████████████████████████████████████████| 900/900 
+```
+
+You can generate train set and development set for rest of the datasets by setting `--dataset`, `--data_path` and `--split`. 
+
 #### Training Meta-learing Model
 
 Run training with the following command:
@@ -172,6 +194,20 @@ Here is the meanings of arguments:
 
 The default configurations for the main experiments are provided in the `configs/` folder. if `--domain` is set to "med" or "law", please use `train_specific_args.json` as the `--train_args_file`.
 
+After running `scripts/train_Llama-3.2-1B-Instruct_general.sh`, when the training starts, your terminal should display messages similar to the following:
+
+```
+- data - INFO - Loading WikiMultiHopQA dataset from data_aug/2wikimultihopqa/train.json.
+- data - INFO - Dataset Loaded.
+- data - INFO - Loading ComplexWebQA dataset from data_aug/complexwebquestions/train.json.
+- data - INFO - Dataset Loaded.
+... # Loading Dataset
+- __main__ - INFO - Loading meta-llama/llama3.2-1b-instruct for Meta ...
+Epoch 0:   0%|                                                             | 0/18720 
+```
+
+The training process are recorded at `outputs/demo/training_log.txt`. You can check it to observe the loss changes during the training process and the evaluation performance on the validation set.
+
 #### Potential Issues
 
 The following error may occur when running the training script:
@@ -182,7 +218,7 @@ RuntimeError: "triu_tril_cuda_template" not implemented for 'BFloat16'
 
 Solve it by the following steps:
 
-- goto the env foler: `cd [your_env_folder]`. It is usually at `[your_miniconda_folder]/envs/re_grad`.
+- goto the env foler: `cd [your_env_folder]`. It is usually at `[your miniconda_folder]/envs/re_grad`.
 
 - open the file `lib/python3.10/site-packages/transformers/models/llama/modeling_llama.py`
 
@@ -257,6 +293,19 @@ offline/
 
 - For `lhf`, `housingqa`, `casehold`: set `index_name = "law"`
 
+After running `scripts/encode_2wikimultihopqa_top3.sh`, your terminal should display messages similar to the following:
+
+```
+Namespace(dataset='2wikimultihopqa', data_path='data/2wikimultihopqa', model_path='outputs/demo', output_dir='demo', output_file='dev', topk=3, split='dev', start=0, end=300, mixed=0.0)
+### Loading model ###
+### Loading dataset ###
+loading dataset from data/2wikimultihopqa
+### Solving dev ###
+100%|███████████████████████████████████████████████████████████| 900/900
+```
+
+The gradients are stored at `offline/demo/top3/2wikimultihopqa/dev.pt`. You can calculate gradients for rest of the datasets by setting `--dataset`, `--data_path`.
+
 #### Evaluation
 
 Running inference with the following command:
@@ -284,3 +333,28 @@ python src/inference.py \
 | `topk`                 | retrieval number                                             |
 | `blind_context `       | whether the model can see the context or not at test time    |
 | `domain`               | specifies the category of dataset to be used                 |
+
+After running `scripts/inference_general_top3.sh`, your terminal should display messages similar to the following:
+
+```
+===Loading Dataset===
+- data - INFO - Loading WikiMultiHopQA dataset from data_aug/2wikimultihopqa/dev.json.
+- data - INFO - Dataset Loaded.
+... # Loading dev.jsonf for other datasets
+0%|                                                          | 0/300
+- root - INFO - Loading gradients for dataset 2wikimultihopqa from offline/demo/top3/2wikimultihopqa/dev.pt
+Starting from v4.46, the `logits` model output will have the same type as the model (except at train time, where it will always be FP32)
+100%|████████████████████████████████████████████████████████| 300/300
+0%|                                                          | 0/300 
+- root - INFO - Loading gradients for dataset complexwebquestions from offline/demo/top3/complexwebquestions/dev.pt
+100%|████████████████████████████████████████████████████████| 300/300 
+0%|                                                          | 0/300 
+- root - INFO - Loading gradients for dataset complexwebquestions from offline/demo/top3/hotpotqa/dev.pt
+100%|████████████████████████████████████████████████████████| 300/300 
+0%|                                                          | 0/300 
+- root - INFO - Loading gradients for dataset complexwebquestions from offline/demo/top3/popqa/dev.pt
+100%|████████████████████████████████████████████████████████| 300/300 
+{'wiki': {...}, 'complexweb': {...}, 'hotpot': {...}, 'popqa': {...}, 'em': ..., 'f1': ..., 'prec': ..., 'recall': ...}
+```
+
+The inference results are stored at `results/demo.json`
