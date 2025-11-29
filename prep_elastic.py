@@ -70,7 +70,7 @@ def build_elasticsearch(
         generate_actions=generate_actions(),
         progress=progress
     )
-
+    print(f"index '{index_name}' has been successfully built.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

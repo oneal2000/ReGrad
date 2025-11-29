@@ -3,7 +3,7 @@
 #### Install Environment
 
 ```
-conda create -n re_grad python=3.10.15
+conda create -n regrad python=3.10.15
 conda activate regrad 
 pip install -r requirements.txt
 pip install torch==2.0.1
@@ -142,7 +142,7 @@ For popqa,  When generating the train set, `start` is suggested to be set to 500
 **Note:** For different datasets, make sure to also modify the variable `index_name` in
  `retrieve/retriever.py` (line 217) accordingly.
 
-- For `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`: set `index_name = "general"`
+- For `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`: set `index_name = "wiki"`
 
 - For `medqa`, `pubmedqa`, `bioasq`: set `index_name = "med"`
 
@@ -160,7 +160,7 @@ loading dataset from data/2wikimultihopqa
 
 You can generate train set and development set for rest of the datasets by setting `--dataset`, `--data_path` and `--split`. 
 
-#### Training Meta-learing Model
+#### Training Meta-learning Model
 
 Run training with the following command:
 
@@ -278,8 +278,8 @@ All generated gradients are stored in the `offline` folder. The specific locatio
 
 ```
 offline/
-└── {topk}/
-    └── {output_dir}/
+└── {output_dir}/ 
+    └── {topk}/
         └── {dataset}/
             └── {output_file}.pt
 ```
@@ -287,7 +287,7 @@ offline/
 **Note:** For different datasets, make sure to also modify the variable `index_name` in
  `retrieve/retriever.py` (line 217) accordingly.
 
-- For `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`: set `index_name = "general"`
+- For `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`: set `index_name = "wiki"`
 
 - For `medqa`, `pubmedqa`, `bioasq`: set `index_name = "med"`
 

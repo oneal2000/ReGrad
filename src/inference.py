@@ -57,40 +57,40 @@ if __name__ == "__main__":
     print("===Loading Dataset===")
     if args.domain == 'general':
         dataset = MixMultiVal(
-            WikiMultiHopQA("data_aug/2wikimultihopqa/dev_top3.json").derive_trunc_dataset(
+            WikiMultiHopQA("data_aug/2wikimultihopqa/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            ComplexWebQA("data_aug/complexwebquestions/dev_top3.json").derive_trunc_dataset(
+            ComplexWebQA("data_aug/complexwebquestions/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            HotpotQA("data_aug/hotpotqa/dev_top3.json").derive_trunc_dataset(
+            HotpotQA("data_aug/hotpotqa/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            PopQA("data_aug/popqa/dev_top3.json").derive_trunc_dataset(args.num_samples_for_eval),
+            PopQA("data_aug/popqa/dev.json").derive_trunc_dataset(args.num_samples_for_eval),
         )
 
     if args.domain == 'med':
         dataset = MixMultiMed(
-            MedQA("data_aug/medqa/dev_top3.json").derive_trunc_dataset(
+            MedQA("data_aug/medqa/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            PubMedQA("data_aug/pubmedqa/dev_top3.json").derive_trunc_dataset(
+            PubMedQA("data_aug/pubmedqa/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            BioASQ("data_aug/bioasq/dev_top3.json").derive_trunc_dataset(
+            BioASQ("data_aug/bioasq/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
         )
 
     if args.domain == 'law':
         dataset = MixMultiLaw(
-            CaseHold("data_aug/casehold/dev_top3.json").derive_trunc_dataset(
+            CaseHold("data_aug/casehold/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            LHF("data_aug/lhf/dev_top3.json").derive_trunc_dataset(
+            LHF("data_aug/lhf/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            HousingQA("data_aug/housingqa/dev_top3.json").derive_trunc_dataset(
+            HousingQA("data_aug/housingqa/dev.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
         )
