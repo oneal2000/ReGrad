@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument("--grad_file", type=str, default=None)  # 各数据集下的文件名
     parser.add_argument("--gamma", type=float, default=1.0)
     parser.add_argument("--mixed_precision", default="bf16")
+    parser.add_argument("--dev_set_name", type=str, default="dev")
     parser.add_argument("--prediction_file", default=None)  # 文件的输出路径
     parser.add_argument("--num_samples_for_eval", type=int, default=300)
     parser.add_argument("--topk", type=int, default=3)  # 保持和encode一致
@@ -51,46 +52,46 @@ if __name__ == "__main__":
     )
     parser.add_argument("--shift", action="store_true")  # 错配context和question
     parser.add_argument("--icl", action="store_true") # 用原始模型ICL推理作为对照
-    
+
     args = parser.parse_args()
 
     print("===Loading Dataset===")
     if args.domain == 'general':
         dataset = MixMultiVal(
-            WikiMultiHopQA("data_aug/2wikimultihopqa/dev.json").derive_trunc_dataset(
+            WikiMultiHopQA(f"data_aug/2wikimultihopqa/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            ComplexWebQA("data_aug/complexwebquestions/dev.json").derive_trunc_dataset(
+            ComplexWebQA(f"data_aug/complexwebquestions/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            HotpotQA("data_aug/hotpotqa/dev.json").derive_trunc_dataset(
+            HotpotQA(f"data_aug/hotpotqa/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            PopQA("data_aug/popqa/dev.json").derive_trunc_dataset(args.num_samples_for_eval),
+            PopQA(f"data_aug/popqa/{args.dev_set_name}.json").derive_trunc_dataset(args.num_samples_for_eval),
         )
 
     if args.domain == 'med':
         dataset = MixMultiMed(
-            MedQA("data_aug/medqa/dev.json").derive_trunc_dataset(
+            MedQA(f"data_aug/medqa/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            PubMedQA("data_aug/pubmedqa/dev.json").derive_trunc_dataset(
+            PubMedQA(f"data_aug/pubmedqa/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            BioASQ("data_aug/bioasq/dev.json").derive_trunc_dataset(
+            BioASQ(f"data_aug/bioasq/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
         )
 
     if args.domain == 'law':
         dataset = MixMultiLaw(
-            CaseHold("data_aug/casehold/dev.json").derive_trunc_dataset(
+            CaseHold(f"data_aug/casehold/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            LHF("data_aug/lhf/dev.json").derive_trunc_dataset(
+            LHF(f"data_aug/lhf/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            HousingQA("data_aug/housingqa/dev.json").derive_trunc_dataset(
+            HousingQA(f"data_aug/housingqa/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
         )

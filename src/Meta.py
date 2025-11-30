@@ -765,6 +765,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dev_set_name",
         type=str,
+        default="dev"
     )
     args = parser.parse_args()
 
