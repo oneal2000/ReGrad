@@ -6,7 +6,6 @@
 conda create -n regrad python=3.10.15
 conda activate regrad 
 pip install -r requirements.txt
-pip install torch==2.0.1
 ```
 
 ### Data Preparation
@@ -41,9 +40,9 @@ gzip -d psgs_w100.tsv.gz
 popd
 ```
 
-2. Download the medical corpus from []() using the following command, and put the file `pubmed.jsonl` into folder `data/med`
-3. Download the law corpus from []() using the following command, and put the file `pile-of-law-chunked.jsonl` into folder `data/law`
-4. Use Elasticsearch to index the Wikipedia dump and corpus
+2. Download the medical corpus from https://www.dropbox.com/scl/fi/u0ne41rznvy5b3kchhxx7/pubmed.jsonl?rlkey=fk0bqnclk2eyyhg8oz5arx81d&st=ub9dp3h9&dl=0, and put the file `pubmed.jsonl` into folder `data/med`
+3. Download the law corpus from https://www.dropbox.com/scl/fi/lqvf6sbn60hm1asue7e47/pile-of-law-chunked.jsonl?rlkey=3sa4ky0pesmqotggudryeo1wj&st=i7v8sbet&dl=0, and put the file `pile-of-law-chunked.jsonl` into folder `data/law`
+4. Use Elasticsearch to index the corpus
 
 ```bash
 cd data
@@ -66,6 +65,44 @@ create index wiki
 0docs [00:00, ?docs/s]              
 index 'wiki' has been successfully built.
 ```
+
+#### **Note: Ensuring Your Elasticsearch Index Is Correctly Built**
+
+Many reproduction issues originate from problems with the Elasticsearch index. To avoid wasted time, please carefully follow the instrucion below before building index.
+
+**Confirm Your Elasticsearch Index Is Fully Constructed：**After you finish building the Wikipedia index, you must manually confirm that ES has indexed the entire corpus. 
+
+Run the command in your terminal:
+
+```
+curl -X GET "localhost:9200/_cat/indices?v"
+```
+
+A fully created index should show roughly **21 million documents** and a **size of about 11GB**. You should observe output similar to:
+
+```
+health status index uuid                  pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   wiki  MmnWNGCVQ4OZvLosWkwk7g   1   1   21015324            0     11.2gb         11.2gb
+```
+
+#### The Most Common Failure: Elasticsearch Stops Indexing Quietly
+
+Elasticsearch can halt indexing without raising any clear warnings. You must ensure the following conditions are satisfied:
+
+- **ES Must Stay Running：**Elasticsearch must keep running in the background until indexing completes.
+
+- **Sufficient Disk Space Is Required:** Make sure that, after considering the ~11GB index size, at least 10% of the disk remains free.
+
+- **Silent Interruption Risk:** If free disk space becomes too low (typically under 10% or even 5%), Elasticsearch will stop indexing automatically without printing any errors.This results in an incomplete index that looks valid at first glance.
+
+The process of building index may take several hours, making it easy to interrupt accidentally.
+If indexing stops midway, the resulting index will be incomplete which can cause noticeable performance drops. **So Please check your index and disk space carefully!**
+
+If you encounter any problems we haven’t mentioned, we strongly recommend checking the official Elasticsearch discussion forum:
+
+https://discuss.elastic.co/
+
+It’s very active and provides solutions to most common errors. We hope this resource helps you build the index smoothly and successfully complete your reproduction!
 
 #### 2. Download dataset
 
@@ -91,27 +128,27 @@ Download the [ComplexWebQuestions](https://www.tau-nlp.sites.tau.ac.il/compwebq)
 
 For PubmedQA:
 
-Download the [PudmedQA]() dataset from its repository , and put the file `train.jsonl`, `dev.jsonl` into folder `data/pubmedqa`.
+Download the [PudmedQA](https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0) dataset from https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0 , and put the file `train.jsonl`, `dev.jsonl` into folder `data/pubmedqa`.
 
 For MedQA:
 
-Download the [MedQA]() dataset from its repository , and put the file `train.jsonl`, `dev.jsonl` into folder `data/medqa`.
+Download the [MedQA](https://www.dropbox.com/scl/fo/jbtmsmzmw3s9oep1gm2y9/ACFn2m_j5XGmeeOyGg5sHJk?rlkey=5wmjnyieu9y5wrlv0ptwzkvpi&st=pu6zt3qa&dl=0) dataset from https://www.dropbox.com/scl/fo/jbtmsmzmw3s9oep1gm2y9/ACFn2m_j5XGmeeOyGg5sHJk?rlkey=5wmjnyieu9y5wrlv0ptwzkvpi&st=pu6zt3qa&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/medqa`.
 
 For Bioasq:
 
-Download the [Bioasq]() dataset from its repository , and put the file `train.jsonl`, `dev.jsonl` into folder `data/bioasq`
+Download the [Bioasq](https://www.dropbox.com/scl/fo/9rzfa9siyu5or6k7nck9s/ANoL4j1dgNd977XLk5BmzOk?rlkey=k0vp9ju6370goksxztr98j0ox&st=qnf6lpao&dl=0) dataset from https://www.dropbox.com/scl/fo/9rzfa9siyu5or6k7nck9s/ANoL4j1dgNd977XLk5BmzOk?rlkey=k0vp9ju6370goksxztr98j0ox&st=qnf6lpao&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/bioasq`
 
 For Casehold:
 
-Download the [Casehold]() dataset from its repository , and put the file `train.jsonl`, `dev.jsonl` into folder `data/casehold`
+Download the [Casehold](https://www.dropbox.com/scl/fo/99ub8p4gkhm4nxyd4wmr1/AHJnkDAulTAvhquUDdR9lAk?rlkey=jrl2fto15bwzoa75v19hfer61&st=tnfshc0c&dl=0) dataset from https://www.dropbox.com/scl/fo/99ub8p4gkhm4nxyd4wmr1/AHJnkDAulTAvhquUDdR9lAk?rlkey=jrl2fto15bwzoa75v19hfer61&st=tnfshc0c&dl=0 , and put the file `train.jsonl`, `dev.jsonl` into folder `data/casehold`
 
 For LHF:
 
-Download the [LHF]() dataset from its repository , and put the file `train.jsonl`, `dev.jsonl` into folder `data/lhf`
+Download the [LHF](https://www.dropbox.com/scl/fo/ztz3l6uui7ht1x5lrm9g7/AMgMYLsyyYSs3wslxC8b2q0?rlkey=b4tkz97f616fm0nrqmocqhgxm&st=q3oil8kj&dl=0) dataset from https://www.dropbox.com/scl/fo/ztz3l6uui7ht1x5lrm9g7/AMgMYLsyyYSs3wslxC8b2q0?rlkey=b4tkz97f616fm0nrqmocqhgxm&st=q3oil8kj&dl=0 , and put the file `train.jsonl`, `dev.jsonl` into folder `data/lhf`
 
 For HousingQA:
 
-Download the [HousingQA]() dataset from its repository , and put the file `train.jsonl`, `dev.jsonl` into folder `data/housingqa`
+Download the [HousingQA](https://www.dropbox.com/scl/fo/ach3gmt91icwab2xn8rr2/AGyKR2BRqKRzheqWznFsVg4?rlkey=rcr7sub9hqgq5lxj2pipydauf&st=y7miiy1t&dl=0) dataset from https://www.dropbox.com/scl/fo/ach3gmt91icwab2xn8rr2/AGyKR2BRqKRzheqWznFsVg4?rlkey=rcr7sub9hqgq5lxj2pipydauf&st=y7miiy1t&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/housingqa`
 
 #### 3. Generate Train Set And Development Set
 
@@ -159,6 +196,8 @@ loading dataset from data/2wikimultihopqa
 ```
 
 You can generate train set and development set for rest of the datasets by setting `--dataset`, `--data_path` and `--split`. 
+
+**Note:** You can set up your own Elasticsearch for retrieval if you want. But setting up ES is not easy — it often causes errors and can be difficult to configure correctly.**So we recommend using the retrieval results we provide for convenience**. You can download it from https://www.dropbox.com/scl/fo/c51nijb716nx8ruxcf34s/AHiU3Sdm0Fr5CYlvwH8LXt0?rlkey=oiztfi05yw7pnw8ljem0jjvvo&st=ai7yuay4&dl=0 and put the augmented dataset into `data_aug/<dataset-name>`.
 
 #### Training Meta-learning Model
 
@@ -255,10 +294,10 @@ Run encoding with the following command:
 python src/encode.py \
     --dataset 2wikimultihopqa \
     --data_path data/2wikimultihopqa \
+    --file_name dev \
     --model_path outputs/demo \
     --output_dir demo \
     --topk 3 \
-    --split dev \
     --start 0 \
     --end 300 \
     --output_file dev
@@ -268,7 +307,7 @@ python src/encode.py \
 | :------------ | :----------------------------------------------------------- |
 | `dataset`     | `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`, `medqa`, `pubmedqa`, `bioasq`, `lhf`, `housingqa`, `casehold` |
 | `data_path`   | folder to the saved data, such as `data/2wikimultihopqa`     |
-| `split`       | "dev", calculating the gradient of passages                  |
+| `file_name`   | default="dev", should correspond to the name of your generated development set(such as `dev.json`) |
 | `topk`        | retrieval number                                             |
 | `start, end ` | Start/End index of samples to process, both being none means taking all samples |
 | `output_dir`  | path to the generated data                                   |
@@ -316,6 +355,7 @@ python src/inference.py \
     --offline_dir offline/demo/top3 \
     --grad_file dev.pt \
     --gamma 1 \
+    --dev_set_name dev \
     --prediction_file results/demo.json \
     --num_samples_for_eval 300 \
     --topk 3 \
@@ -327,6 +367,7 @@ python src/inference.py \
 | :--------------------- | :----------------------------------------------------------- |
 | `offline_dir`          | path to the calculated gradient                              |
 | `grad_file`            | file name of gradients, corresponding to `--output_file` when calculating gradients |
+| `dev_set_name`         | should correspond to the name of your generated development set(such as `dev.json`) |
 | `gamma`                | scaling factor that controls the step size of gradient-based adaptation at test time |
 | `prediction_file`      | path to the prediction results                               |
 | `num_samples_for_eval` | number of samples used for evaluation                        |
