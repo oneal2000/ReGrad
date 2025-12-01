@@ -197,7 +197,7 @@ loading dataset from data/2wikimultihopqa
 
 You can generate train set and development set for rest of the datasets by setting `--dataset`, `--data_path` and `--split`. 
 
-**Note:** You can set up your own Elasticsearch for retrieval if you want. But setting up ES is not easy — it often causes errors and can be difficult to configure correctly.**So we recommend using the retrieval results we provide for convenience**. You can download it from https://www.dropbox.com/scl/fo/c51nijb716nx8ruxcf34s/AHiU3Sdm0Fr5CYlvwH8LXt0?rlkey=oiztfi05yw7pnw8ljem0jjvvo&st=ai7yuay4&dl=0 and put the augmented dataset into `data_aug/<dataset-name>`.
+**Note:** You can set up your own Elasticsearch for retrieval if you want. But setting up ES is not easy — it often causes errors and can be difficult to configure correctly.**So we recommend using the retrieval results we provide for convenience**. You can download it from https://www.dropbox.com/scl/fo/c51nijb716nx8ruxcf34s/AHiU3Sdm0Fr5CYlvwH8LXt0?rlkey=oiztfi05yw7pnw8ljem0jjvvo&st=ai7yuay4&dl=0 and put the augmented datasets into `data_aug/`.
 
 #### Training Meta-learning Model
 
