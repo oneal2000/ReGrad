@@ -220,6 +220,7 @@ python src/Meta.py \
 
 - For **Llama-3.2-1B-Instruct** and **Llama-3.2-3B-Instruct**, training is designed to run on **a single GPU** (e.g., one 24 GB or 48 GB card).
 - For **Llama-3.1-8B-Instruct**, we recommend using exactly **4 GPUs**, since the 8B model may exceed the memory of a single device.
+We have observed that modifications in GPU setups will lead to results that do not align with our paper, even if the code runs without errors.
 Here is the meanings of arguments:
 
 - `peft_config_file`: The config file of PEFT. Now only LoRA is supported.
