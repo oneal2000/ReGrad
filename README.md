@@ -343,8 +343,8 @@ After running `scripts/encode_2wikimultihopqa_top3.sh`, your terminal should dis
 Namespace(dataset='2wikimultihopqa', data_path='data/2wikimultihopqa', model_path='outputs/demo', output_dir='demo', output_file='dev', topk=3, split='dev', start=0, end=300, mixed=0.0)
 ### Loading model ###
 ### Loading dataset ###
-loading dataset from data/2wikimultihopqa
-### Solving dev ###
+████████████████████████████████████████████████████████████████| 900/900
+Saved to offline/demo/top3/2wikimultihopqa/dev.pt
 100%|███████████████████████████████████████████████████████████| 900/900
 ```
 
