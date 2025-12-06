@@ -83,6 +83,8 @@ A fully created index should show roughly **21 million documents** and a **size 
 ```
 health status index uuid                  pri rep docs.count docs.deleted store.size pri.store.size
 yellow open   wiki  MmnWNGCVQ4OZvLosWkwk7g   1   1   21015324            0     11.2gb         11.2gb
+yellow open   law   TjeziBAZQRGFlFHTK9e1EA   1   1   30852829            0     27.3gb         27.3gb       
+yellow open   med   egjiZ78JQvqBQe9A7iyBtw   1   1   29329202            0     31.2gb         31.2gb       
 ```
 
 #### The Most Common Failure: Elasticsearch Stops Indexing Quietly
