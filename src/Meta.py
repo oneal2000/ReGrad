@@ -154,6 +154,11 @@ def get_val_data(tokenizer, qas, choices=None, dataset=None, device=None, contex
 def tokenize_task(
     tokenizer, data, device=None, use_simple_prompt=True, max_context_len=1024
 ):
+    context = None
+    if not blind_context:
+        context = "\n".join(data["context"])
+    # print(context)
+
     return {
         "train_data": [
             get_train_data(tokenizer, context, device=device, max_len=max_context_len)
@@ -165,7 +170,7 @@ def tokenize_task(
             data["choices"] if data["dataset"] == "casehold" else None,
             data["dataset"],
             device=device,
-            context=None,
+            context=context,
             use_simple_prompt=use_simple_prompt,
         ),
     }
@@ -574,8 +579,9 @@ def eval(
     max_num_samples=None,
     only_loss=False,
     device=None,
+    blind_context=True
 ):
-    creator = MetaModelCreator(learner, generation_config, device=device)
+    creator = MetaModelCreator(learner, generation_config, device=device, blind_context=blind_context)
     results = val_set.inference(
         creator,
         max_num_samples=max_num_samples,
@@ -597,6 +603,7 @@ def train(
     generation_config,
     get_score=lambda x: x["f1"],
     logfile=None,
+    blind_context=True
 ):
     def collate_fn(batch):
         return [
@@ -605,6 +612,7 @@ def train(
                 data,
                 use_simple_prompt=learner.config.use_simple_prompt,
                 max_context_len=train_args.max_context_len,
+                blind_context=blind_context
             )
             for data in batch
         ]
@@ -666,6 +674,7 @@ def train(
             max_num_samples=train_args.num_samples_for_eval,
             only_loss=train_args.eval_only_loss,
             device=accelerator.device,
+            blind_context=blind_context
         )
         logger.info("Validation results: {}".format(results))
         if logfile:
@@ -751,6 +760,7 @@ if __name__ == "__main__":
     parser.add_argument("--generation_config_file")
     parser.add_argument("--learner_config_file")
     parser.add_argument("--output_dir", default="outputs/sample")
+    parser.add_argument("--blind_context", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument(
         "--domain",
@@ -882,6 +892,7 @@ if __name__ == "__main__":
             output_dir=args.output_dir,
             generation_config=generation_config,
             logfile=f,
+            blind_context=args.blind_context
         )
         f.write(f"At step {num_steps} get the best results: {results}\n")
         f.flush()

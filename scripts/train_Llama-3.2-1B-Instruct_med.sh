@@ -7,4 +7,5 @@ python src/Meta.py \
   --train_set_name train \
   --dev_set_name dev \
   --domain med \
-  --overwrite
+  --overwrite \
+  --blind_context

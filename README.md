@@ -215,7 +215,8 @@ python src/Meta.py \
   --train_set_name train \
   --dev_set_name dev \
   --domain general \
-  --overwrite
+  --overwrite \
+  --blind_context
 ```
 
 **GPU Usage Note:**
@@ -224,7 +225,6 @@ python src/Meta.py \
 - For **Llama-3.1-8B-Instruct**, we recommend using exactly **4 GPUs**, since the 8B model may exceed the memory of a single device.
 We have observed that modifications in GPU setups will lead to results that do not align with our paper, even if the code runs without errors.
 Here is the meanings of arguments:
-
 - `peft_config_file`: The config file of PEFT. Now only LoRA is supported.
 - `train_args_file`: The config file of the training. Refer to the `TrainArgs` in `src/Meta.py` for the meanings of the arguments.
 - `generation_config_file`: The config file of the generation in regular evaluation during training.
@@ -237,6 +237,9 @@ Here is the meanings of arguments:
   - `med`: use the medical domain datasets, including PubMedQA, MedQA, and BioASQ
   - `law`: use the legal domain datasets, including CaseHold, LHF and HousingQA.
 - `overwrite`: Whether to overwrite the output directory if it exists.
+- `blind_context `:  Whether the model can see the context or not at training stage.
+  - `ReGrad`: Enabled. The model is trained without seeing the context.
+  - `ReGrad + ICL`: Disabled. The model is trained with the context. (refer to `scripts/train_Llama-3.2-1B-Instruct_general_icl.sh`)
 
 The default configurations for the main experiments are provided in the `configs/` folder. if `--domain` is set to "med" or "law", please use `train_specific_args.json` as the `--train_args_file`.
 
@@ -381,6 +384,8 @@ python src/inference.py \
 | `topk`                 | retrieval number                                             |
 | `blind_context `       | whether the model can see the context or not at test time    |
 | `domain`               | specifies the category of dataset to be used                 |
+
+**Note:** For `ReGrad`, please enable `--blind_context` at test time. For `ReGrad + ICL`, please disable `--blind_context` so that the model can see the retrieved context. (refer to `scripts/inference_general_top3_icl.sh`)
 
 After running `scripts/inference_general_top3.sh`, your terminal should display messages similar to the following:
 

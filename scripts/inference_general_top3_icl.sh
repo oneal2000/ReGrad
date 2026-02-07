@@ -1,0 +1,10 @@
+python src/inference.py \
+    --model_path outputs/demo \
+    --offline_dir offline/demo/top3 \
+    --grad_file dev.pt \
+    --gamma 1 \
+    --dev_set_name dev \
+    --prediction_file results/demo.json \
+    --num_samples_for_eval 300 \
+    --topk 3 \
+    --domain general
