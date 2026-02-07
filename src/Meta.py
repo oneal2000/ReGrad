@@ -429,6 +429,10 @@ class RGModelCreator(ModelCreator):
             self.grad_store[dataset] = torch.load(
                 grad_file_path, map_location="cpu"
             ) 
+            self.grad_store[dataset] = {
+                    k: {kk: vv.cuda(non_blocking=True) for kk, vv in v.items()}
+                    for k, v in self.grad_store[dataset].items()
+                }
 
         dataset_grads = self.grad_store[dataset]
 
@@ -446,16 +450,15 @@ class RGModelCreator(ModelCreator):
         param_dict = dict(self.learner.base_model.named_parameters())
 
         for key in grad_list[0].keys():
-            grad_sum = sum(g[key].to(device) for g in grad_list) 
-            grad_val = grad_sum.float().to(device)
+            grad_sum = sum(g[key] for g in grad_list) 
             alpha = (
-                self.learner.alpha.to(grad_val.device)
+                self.learner.alpha
                 if self.learner.config.alpha_mode in ["same", "fix"]
-                else self.learner.alpha[key].to(grad_val.device)
+                else self.learner.alpha[key]
             )
             if param_dict[key].requires_grad:
                 merged_params[key] = (
-                    param_dict[key].to(device) - self.gamma * alpha * grad_val
+                    param_dict[key].to(device) - self.gamma * alpha * grad_sum
                 )
             else:
                 merged_params[key] = param_dict[key].to(device)
