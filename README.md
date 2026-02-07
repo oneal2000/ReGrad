@@ -70,7 +70,7 @@ index 'wiki' has been successfully built.
 
 Many reproduction issues originate from problems with the Elasticsearch index. To avoid wasted time, please carefully follow the instrucion below before building index.
 
-**Confirm Your Elasticsearch Index Is Fully Constructed：**After you finish building the Wikipedia index, you must manually confirm that ES has indexed the entire corpus. 
+**Confirm Your Elasticsearch Index Is Fully Constructed:** After you finish building the Wikipedia index, you must manually confirm that ES has indexed the entire corpus. 
 
 Run the command in your terminal:
 
@@ -91,7 +91,7 @@ yellow open   med   egjiZ78JQvqBQe9A7iyBtw   1   1   29329202            0     3
 
 Elasticsearch can halt indexing without raising any clear warnings. You must ensure the following conditions are satisfied:
 
-- **ES Must Stay Running：**Elasticsearch must keep running in the background until indexing completes.
+- **ES Must Stay Running:** Elasticsearch must keep running in the background until indexing completes.
 
 - **Sufficient Disk Space Is Required:** Make sure that, after considering the ~11GB index size, at least 10% of the disk remains free.
 
@@ -237,7 +237,7 @@ Here is the meanings of arguments:
   - `med`: use the medical domain datasets, including PubMedQA, MedQA, and BioASQ
   - `law`: use the legal domain datasets, including CaseHold, LHF and HousingQA.
 - `overwrite`: Whether to overwrite the output directory if it exists.
-- `blind_context `:  Whether the model can see the context or not at training stage.
+- `blind_context`:  Whether the model can see the context or not at training stage.
   - `ReGrad`: Enabled. The model is trained without seeing the context.
   - `ReGrad + ICL`: Disabled. The model is trained with the context. (refer to `scripts/train_Llama-3.2-1B-Instruct_general_icl.sh`)
 
