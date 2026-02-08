@@ -152,7 +152,7 @@ def get_val_data(tokenizer, qas, choices=None, dataset=None, device=None, contex
 
 
 def tokenize_task(
-    tokenizer, data, device=None, use_simple_prompt=True, max_context_len=1024
+    tokenizer, data, device=None, use_simple_prompt=True, max_context_len=1024, blind_context=True
 ):
     context = None
     if not blind_context:
