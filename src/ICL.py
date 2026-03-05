@@ -55,7 +55,7 @@ ICLprompt_context_5choices = """<|begin_of_text|><|start_header_id|>system<|end_
 {context}
 ####CONTEXT end####
 Complete the following excerpt from a US court opinion.
-Always answer ONLY with the option letter: the final answer is X, where X ∈ {A, B, C, D, E}.
+Always answer ONLY with the option letter: the final answer is X, where X ∈ {{A, B, C, D, E}}.
 <|eot_id|><|start_header_id|>user<|end_header_id|>"""
 
 ICLprompt_context_blind_5choices = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>

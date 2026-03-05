@@ -71,18 +71,13 @@ def get_val_data(tokenizer, qas, choices=None, dataset=None, device=None, contex
                 ) + ICL.simple_ICLprompt_question.format(question=question)
             else:
                 if dataset in ["lhf","pubmedqa","bioasq","housingqa"]:  # yes/no datasets
-                    prefix = ICL.ICLprompt_context_yn + ICL.ICLprompt_question.format(
-                    question=question
-                )
+                    prefix = ICL.ICLprompt_context_yn.format(context=context) + ICL.ICLprompt_question.format(question=question)
                 elif dataset in ["casehold"]:  # multiple choices datasets
                     ch["question"] = question
-                    prefix = ICL.ICLprompt_context_5choices + ICL.ICLprompt_question_5choices.format(
-                    **ch)
+                    prefix = ICL.ICLprompt_context_5choices.format(context=context) + ICL.ICLprompt_question_5choices.format(**ch)
                     # print(prefix)
                 else:
-                    prefix = ICL.ICLprompt_context.format(
-                        context=context
-                    ) + ICL.ICLprompt_question.format(question=question)
+                    prefix = ICL.ICLprompt_context.format(context=context) + ICL.ICLprompt_question.format(question=question)
         else:
             if use_simple_prompt:
                 prefix = (
