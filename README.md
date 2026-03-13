@@ -72,7 +72,7 @@ index 'wiki' has been successfully built.
 
 #### **Note: Ensuring Your Elasticsearch Index Is Correctly Built**
 
-Many reproduction issues originate from problems with the Elasticsearch index. To avoid wasted time, please carefully follow the instrucions below before building index.
+Many reproduction issues originate from problems with the Elasticsearch index. To avoid wasted time, please carefully follow the instrucions below before building the index.
 
 **Confirm Your Elasticsearch Index Is Fully Constructed:** After you finish building the Wikipedia index, you must manually confirm that ES has indexed the entire corpus. 
 
@@ -135,7 +135,7 @@ Download the [ComplexWebQuestions](https://www.tau-nlp.sites.tau.ac.il/compwebq)
 
 For PubmedQA:
 
-Download the [PudmedQA](https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0) dataset from https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0 , and put the file `train.jsonl`, `dev.jsonl` into folder `data/pubmedqa`.
+Download the [PubmedQA](https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0) dataset from https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0 , and put the file `train.jsonl`, `dev.jsonl` into folder `data/pubmedqa`.
 
 For IDQUAD:
 
@@ -210,7 +210,7 @@ loading dataset from data/2wikimultihopqa
 
 You can generate train set and development set for rest of the datasets by setting `--dataset`, `--data_path` and `--split`. 
 
-**Note:** You can set up your own Elasticsearch for retrieval if you want. But setting up ES is not easy — it often causes errors and can be difficult to configure correctly.**So we recommend using the retrieval results we provide for convenience**. You can download it from https://www.dropbox.com/scl/fo/c51nijb716nx8ruxcf34s/AHiU3Sdm0Fr5CYlvwH8LXt0?rlkey=oiztfi05yw7pnw8ljem0jjvvo&st=ai7yuay4&dl=0 and put the augmented datasets into `data_aug/`.
+**Note:** You can set up your own Elasticsearch for retrieval if you want. But setting up ES is not easy — it often causes errors and can be difficult to configure correctly. **So we recommend using the retrieval results we provide for convenience**. You can download it from https://www.dropbox.com/scl/fo/c51nijb716nx8ruxcf34s/AHiU3Sdm0Fr5CYlvwH8LXt0?rlkey=oiztfi05yw7pnw8ljem0jjvvo&st=ai7yuay4&dl=0 and put the augmented datasets into `data_aug/`.
 
 #### Training Meta-learning Model
 
@@ -253,7 +253,7 @@ Here are the meanings of arguments:
   - `ReGrad`: Enabled. The model is trained without seeing the context.
   - `ReGrad + ICL`: Disabled. The model is trained with the context. (refer to `scripts/train_Llama-3.2-1B-Instruct_general_icl.sh`)
 
-The default configurations for the main experiments are provided in the `configs/` folder. If `--domain` is set to "med" or "law", please use `train_specific_args.json` as the `--train_args_file`.
+The default configurations for the main experiments are provided in the `config/` folder. If `--domain` is set to "med" or "law", please use `train_specific_args.json` as the `--train_args_file`.
 
 After running `scripts/train_Llama-3.2-1B-Instruct_general.sh`, when the training starts, your terminal should display messages similar to the following:
 
@@ -416,10 +416,10 @@ Starting from v4.46, the `logits` model output will have the same type as the mo
 - root - INFO - Loading gradients for dataset complexwebquestions from offline/demo/top3/complexwebquestions/dev.pt
 100%|████████████████████████████████████████████████████████| 300/300 
 0%|                                                          | 0/300 
-- root - INFO - Loading gradients for dataset complexwebquestions from offline/demo/top3/hotpotqa/dev.pt
+- root - INFO - Loading gradients for dataset hotpotqa from offline/demo/top3/hotpotqa/dev.pt
 100%|████████████████████████████████████████████████████████| 300/300 
 0%|                                                          | 0/300 
-- root - INFO - Loading gradients for dataset complexwebquestions from offline/demo/top3/popqa/dev.pt
+- root - INFO - Loading gradients for dataset popqa from offline/demo/top3/popqa/dev.pt
 100%|████████████████████████████████████████████████████████| 300/300 
 {'wiki': {...}, 'complexweb': {...}, 'hotpot': {...}, 'popqa': {...}, 'em': ..., 'f1': ..., 'prec': ..., 'recall': ...}
 ```
