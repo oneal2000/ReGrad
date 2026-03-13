@@ -118,7 +118,7 @@ def load_pubmedqa(data_path, split):
     return {split: new_dataset}
 
 
-def load_medqa(data_path, split):
+def load_idquad(data_path, split):
     dataset = []
     with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
         for line in tqdm(fin.readlines()):
@@ -138,7 +138,7 @@ def load_medqa(data_path, split):
 
     return {split: new_dataset}
 
-def load_bioasq(data_path, split):
+def load_basketball(data_path, split):
     dataset = []
     with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
         for line in tqdm(fin.readlines()):
@@ -158,6 +158,25 @@ def load_bioasq(data_path, split):
 
     return {split: new_dataset}
 
+def load_football(data_path, split):
+    dataset = []
+    with open(os.path.join(data_path, f"{split}.jsonl"), "r") as fin:
+        for line in tqdm(fin.readlines()):
+            da = json.loads(line)
+            dataset.append(da)
+        print(f"loading dataset from {data_path}")
+
+    new_dataset = []
+    for did, data in enumerate(dataset):
+        answer = data["answer"]
+        val = {
+            "test_id":  did,
+            "question": data["question"],
+            "answer":   answer
+        }
+        new_dataset.append(val)
+
+    return {split: new_dataset}
 
 def load_lhf(data_path, split):
     dataset = []

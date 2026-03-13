@@ -40,7 +40,7 @@ from peft import get_peft_config, get_peft_model
 from accelerate import Accelerator
 
 from basic import ModelCreator
-from data import WikiMultiHopQA, ComplexWebQA, HotpotQA, PopQA, mix_datasets, MixMultiVal, PubMedQA, MedQA, BioASQ, MixMultiMed, HousingQA, CaseHold, LHF, MixMultiLaw
+from data import WikiMultiHopQA, ComplexWebQA, HotpotQA, PopQA, mix_datasets, MixMultiVal, PubMedQA, IDQUAD,  MixMultiMed, Basketball, Football, MixMultiSports, HousingQA, CaseHold, LHF, MixMultiLaw
 import ICL
 
 
@@ -70,7 +70,7 @@ def get_val_data(tokenizer, qas, choices=None, dataset=None, device=None, contex
                     context=context
                 ) + ICL.simple_ICLprompt_question.format(question=question)
             else:
-                if dataset in ["lhf","pubmedqa","bioasq","housingqa"]:  # yes/no datasets
+                if dataset in ["lhf","pubmedqa","housingqa"]:  # yes/no datasets
                     prefix = ICL.ICLprompt_context_yn.format(context=context) + ICL.ICLprompt_question.format(question=question)
                 elif dataset in ["casehold"]:  # multiple choices datasets
                     ch["question"] = question
@@ -85,7 +85,7 @@ def get_val_data(tokenizer, qas, choices=None, dataset=None, device=None, contex
                     + ICL.simple_ICLprompt_question.format(question=question)
                 )
             else:
-                if dataset in ["lhf","pubmedqa","bioasq","housingqa"]:
+                if dataset in ["lhf","pubmedqa","housingqa"]:
                     prefix = ICL.ICLprompt_context_blind_yn + ICL.ICLprompt_question.format(
                         question=question
                 )
@@ -762,7 +762,7 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument(
         "--domain",
-        choices=['general', 'med', 'law'],
+        choices=['general', 'med', 'law', 'sports'],
         type=str,
         default='general'
     )
@@ -833,14 +833,22 @@ if __name__ == "__main__":
 
     elif args.domain == "med":
         train_pub = PubMedQA(gold_file=f"data_aug/pubmedqa/{args.train_set_name}.json").derive_training_dataset()
-        train_med = MedQA(gold_file=f"data_aug/medqa/{args.train_set_name}.json").derive_training_dataset()
-        train_bio = BioASQ(gold_file=f"data_aug/bioasq/{args.train_set_name}.json").derive_training_dataset()
-        train_set = mix_datasets([train_pub, train_med, train_bio])
+        train_idq = IDQUAD(gold_file=f"data_aug/idquad/{args.train_set_name}.json").derive_training_dataset()
+        train_set = mix_datasets([train_pub, train_idq])
 
         val_set = MixMultiMed(
             PubMedQA(gold_file=f"data_aug/pubmedqa/{args.dev_set_name}.json").derive_trunc_dataset(),
-            MedQA(gold_file=f"data_aug/medqa/{args.dev_set_name}.json").derive_trunc_dataset(),
-            BioASQ(gold_file=f"data_aug/bioasq/{args.dev_set_name}.json").derive_trunc_dataset(),
+            IDQUAD(gold_file=f"data_aug/idquad/{args.dev_set_name}.json").derive_trunc_dataset(),
+        )
+        
+    elif args.domain == "sports":
+        train_bas = Basketball(gold_file=f"data_aug/basketball/{args.train_set_name}.json").derive_training_dataset()
+        train_foo = Football(gold_file=f"data_aug/football/{args.train_set_name}.json").derive_training_dataset()
+        train_set = mix_datasets([train_bas, train_foo])
+
+        val_set = MixMultiSports(
+            Basketball(gold_file=f"data_aug/basketball/{args.dev_set_name}.json").derive_trunc_dataset(),
+            Football(gold_file=f"data_aug/football/{args.dev_set_name}.json").derive_trunc_dataset(),
         )
 
     else:

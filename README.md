@@ -17,12 +17,14 @@ We use **four general QA datasets** for training and evaluation on general knowl
 - ComplexWebQuestions
 - PopQA
 
-In addition to these, we also use **six domain-specific datasets** focused on the **medicine** and **law** fields, to investigate the performance of our method in specific domains:
+In addition to these, we also use **seven domain-specific datasets** focused on the **medicine**, **sports** and **law** fields, to investigate the performance of our method in specific domains:
 
 - Medicine:
-  - MedQA
   - PubmedQA
-  - Bioasq
+  - IDQUAD
+- Sports:
+  - Basketball
+  - Football
 - Law:
   - LHF
   - HousingQA
@@ -41,8 +43,9 @@ popd
 ```
 
 2. Download the medical corpus from https://www.dropbox.com/scl/fi/u0ne41rznvy5b3kchhxx7/pubmed.jsonl?rlkey=fk0bqnclk2eyyhg8oz5arx81d&st=ub9dp3h9&dl=0, and put the file `pubmed.jsonl` into folder `data/med`
-3. Download the law corpus from https://www.dropbox.com/scl/fi/lqvf6sbn60hm1asue7e47/pile-of-law-chunked.jsonl?rlkey=3sa4ky0pesmqotggudryeo1wj&st=i7v8sbet&dl=0, and put the file `pile-of-law-chunked.jsonl` into folder `data/law`
-4. Use Elasticsearch to index the corpus
+3. Download the sports corpus from https://www.dropbox.com/scl/fi/79ll69lzqlr1is6kxj0yy/sports.jsonl?rlkey=10o9bp2keoejdfcjmc0bj8zfy&st=q2dnfqro&dl=0, and put the file `sports.jsonl` into folder `data/sports`
+4. Download the law corpus from https://www.dropbox.com/scl/fi/lqvf6sbn60hm1asue7e47/pile-of-law-chunked.jsonl?rlkey=3sa4ky0pesmqotggudryeo1wj&st=i7v8sbet&dl=0, and put the file `pile-of-law-chunked.jsonl` into folder `data/law`
+5. Use Elasticsearch to index the corpus
 
 ```bash
 cd data
@@ -54,6 +57,7 @@ nohup bin/elasticsearch &  # run Elasticsearch in background
 cd ../..
 python prep_elastic.py --data_path data/dpr/psgs_w100.tsv --index_name wiki  
 python prep_elastic.py --data_path data/med/pubmed.jsonl --index_name med
+python prep_elastic.py --data_path data/sports/sports.jsonl --index_name sports
 python prep_elastic.py --data_path data/law/pile-of-law-chunked.jsonl --index_name law
 ```
 
@@ -68,7 +72,7 @@ index 'wiki' has been successfully built.
 
 #### **Note: Ensuring Your Elasticsearch Index Is Correctly Built**
 
-Many reproduction issues originate from problems with the Elasticsearch index. To avoid wasted time, please carefully follow the instrucion below before building index.
+Many reproduction issues originate from problems with the Elasticsearch index. To avoid wasted time, please carefully follow the instrucions below before building index.
 
 **Confirm Your Elasticsearch Index Is Fully Constructed:** After you finish building the Wikipedia index, you must manually confirm that ES has indexed the entire corpus. 
 
@@ -83,7 +87,8 @@ A fully created index should show roughly **21 million documents** and a **size 
 ```
 health status index uuid                  pri rep docs.count docs.deleted store.size pri.store.size
 yellow open   wiki  MmnWNGCVQ4OZvLosWkwk7g   1   1   21015324            0     11.2gb         11.2gb
-yellow open   law   TjeziBAZQRGFlFHTK9e1EA   1   1   30852829            0     27.3gb         27.3gb       
+yellow open   law   TjeziBAZQRGFlFHTK9e1EA   1   1   30852829            0     27.3gb         27.3gb
+yellow open   sports Pnl9Qlk8S0-ev0oQ1_iGuw  1   1   160563              0     34.7mb         34.7mb       
 yellow open   med   egjiZ78JQvqBQe9A7iyBtw   1   1   29329202            0     31.2gb         31.2gb       
 ```
 
@@ -95,7 +100,7 @@ Elasticsearch can halt indexing without raising any clear warnings. You must ens
 
 - **Sufficient Disk Space Is Required:** Make sure that, after considering the ~11GB index size, at least 10% of the disk remains free.
 
-- **Silent Interruption Risk:** If free disk space becomes too low (typically under 10% or even 5%), Elasticsearch will stop indexing automatically without printing any errors.This results in an incomplete index that looks valid at first glance.
+- **Silent Interruption Risk:** If free disk space becomes too low (typically under 10% or even 5%), Elasticsearch will stop indexing automatically without printing any errors. This results in an incomplete index that looks valid at first glance.
 
 The process of building index may take several hours, making it easy to interrupt accidentally.
 If indexing stops midway, the resulting index will be incomplete which can cause noticeable performance drops. **So Please check your index and disk space carefully!**
@@ -132,13 +137,17 @@ For PubmedQA:
 
 Download the [PudmedQA](https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0) dataset from https://www.dropbox.com/scl/fo/357s89d2vxj9c6t9pljw5/AFdREFA65bJ-zlOj5QGAJlk?rlkey=h2h8qudovwzevllwmw04pzvoz&st=l3p7312b&dl=0 , and put the file `train.jsonl`, `dev.jsonl` into folder `data/pubmedqa`.
 
-For MedQA:
+For IDQUAD:
 
-Download the [MedQA](https://www.dropbox.com/scl/fo/jbtmsmzmw3s9oep1gm2y9/ACFn2m_j5XGmeeOyGg5sHJk?rlkey=5wmjnyieu9y5wrlv0ptwzkvpi&st=pu6zt3qa&dl=0) dataset from https://www.dropbox.com/scl/fo/jbtmsmzmw3s9oep1gm2y9/ACFn2m_j5XGmeeOyGg5sHJk?rlkey=5wmjnyieu9y5wrlv0ptwzkvpi&st=pu6zt3qa&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/medqa`.
+Download the [IDQUAD](https://www.dropbox.com/scl/fo/o9osxtxj7pa288axku4s1/AMYVv1oL2939EbZyY7Vlo1s?rlkey=o69givi9h1marqb9hmtie80k3&st=9mvakn9q&dl=0) dataset from https://www.dropbox.com/scl/fo/o9osxtxj7pa288axku4s1/AMYVv1oL2939EbZyY7Vlo1s?rlkey=o69givi9h1marqb9hmtie80k3&st=9mvakn9q&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/idquad`.
 
-For Bioasq:
+For Basketball:
 
-Download the [Bioasq](https://www.dropbox.com/scl/fo/9rzfa9siyu5or6k7nck9s/ANoL4j1dgNd977XLk5BmzOk?rlkey=k0vp9ju6370goksxztr98j0ox&st=qnf6lpao&dl=0) dataset from https://www.dropbox.com/scl/fo/9rzfa9siyu5or6k7nck9s/ANoL4j1dgNd977XLk5BmzOk?rlkey=k0vp9ju6370goksxztr98j0ox&st=qnf6lpao&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/bioasq`
+Download the [Basketball](https://www.dropbox.com/scl/fo/art7iko0v22lxlg7b2zuo/APS7-jO-9YtVWMPmmg9zWIQ?rlkey=rdej7clhhdsczveq3yoi0s4h7&st=zb4yyhe9&dl=0) dataset from https://www.dropbox.com/scl/fo/art7iko0v22lxlg7b2zuo/APS7-jO-9YtVWMPmmg9zWIQ?rlkey=rdej7clhhdsczveq3yoi0s4h7&st=zb4yyhe9&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/basketball`.
+
+For Football:
+
+Download the [Football](https://www.dropbox.com/scl/fo/gmbfk87k1l192kocnew2c/AFbkXHyvcqZbdbsIzwVXhBI?rlkey=a7gib8xwv5eqkn7siqjvlxdww&st=fcsxw6a9&dl=0) dataset from https://www.dropbox.com/scl/fo/gmbfk87k1l192kocnew2c/AFbkXHyvcqZbdbsIzwVXhBI?rlkey=a7gib8xwv5eqkn7siqjvlxdww&st=fcsxw6a9&dl=0, and put the file `train.jsonl`, `dev.jsonl` into folder `data/football`.
 
 For Casehold:
 
@@ -167,9 +176,9 @@ python src/augment.py \
 
 | **Parameter** | **Example/Options**                                          |
 | :------------ | :----------------------------------------------------------- |
-| `dataset`     | `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`, `medqa`, `pubmedqa`, `bioasq`, `lhf`, `housingqa`, `casehold` |
+| `dataset`     | `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`, `idquad`, `pubmedqa`, `basketball`, `football`, `lhf`, `housingqa`, `casehold` |
 | `data_path`   | folder to the saved data, such as `data/2wikimultihopqa`     |
-| `split`       | train/dev, sampling from diffrent sources                    |
+| `split`       | train/dev, sampling from different sources                    |
 | `topk`        | retrieval number                                             |
 | `start, end ` | Start/End index of samples to process, both being none means taking all samples |
 | `output_file` | path to the generated data                                   |
@@ -183,11 +192,13 @@ For popqa,  When generating the train set, `start` is suggested to be set to 500
 
 - For `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`: set `index_name = "wiki"`
 
-- For `medqa`, `pubmedqa`, `bioasq`: set `index_name = "med"`
+- For `idquad`, `pubmedqa`: set `index_name = "med"`
+
+- For `basketball`, `football`: set `index_name = "sports"`
 
 - For `lhf`, `housingqa`, `casehold`: set `index_name = "law"`
 
-Taking generating development set for 2WikiMultihopQA as an example, after run `scripts/augment_2wikimultihopqa_top3.sh`,  your terminal should display messages similar to the following:
+Taking generating development set for 2WikiMultihopQA as an example, after running `scripts/augment_2wikimultihopqa_top3.sh`,  your terminal should display messages similar to the following:
 
 ```
 Namespace(dataset='2wikimultihopqa', data_path='data/2wikimultihopqa', topk=3, split='dev', start=0, end=300, output_file='data_aug/2wikimultihopqa/dev.json')
@@ -224,7 +235,7 @@ python src/Meta.py \
 - For **Llama-3.2-1B-Instruct** and **Llama-3.2-3B-Instruct**, training is designed to run on **a single GPU** (e.g., one 24 GB or 48 GB card).
 - For **Llama-3.1-8B-Instruct**, we recommend using exactly **4 GPUs**, since the 8B model may exceed the memory of a single device.
 We have observed that modifications in GPU setups will lead to results that do not align with our paper, even if the code runs without errors.
-Here is the meanings of arguments:
+Here are the meanings of arguments:
 - `peft_config_file`: The config file of PEFT. Now only LoRA is supported.
 - `train_args_file`: The config file of the training. Refer to the `TrainArgs` in `src/Meta.py` for the meanings of the arguments.
 - `generation_config_file`: The config file of the generation in regular evaluation during training.
@@ -234,14 +245,15 @@ Here is the meanings of arguments:
 - `dev_set_name`: should correspond to the name of your generated development set(such as `dev.json`)  
 - `domain`: specifies the category of dataset to be used. 
   - `general`: use the four general QA datasets, including 2WikiMultiHopQA, HotpotQA, ComplexWebQuestions, and PopQA.
-  - `med`: use the medical domain datasets, including PubMedQA, MedQA, and BioASQ
+  - `med`: use the medical domain datasets, including PubMedQA, IDQUAD
+  - `sports`: use the sports domain datasets, including Basketball, Football
   - `law`: use the legal domain datasets, including CaseHold, LHF and HousingQA.
 - `overwrite`: Whether to overwrite the output directory if it exists.
 - `blind_context`:  Whether the model can see the context or not at training stage.
   - `ReGrad`: Enabled. The model is trained without seeing the context.
   - `ReGrad + ICL`: Disabled. The model is trained with the context. (refer to `scripts/train_Llama-3.2-1B-Instruct_general_icl.sh`)
 
-The default configurations for the main experiments are provided in the `configs/` folder. if `--domain` is set to "med" or "law", please use `train_specific_args.json` as the `--train_args_file`.
+The default configurations for the main experiments are provided in the `configs/` folder. If `--domain` is set to "med" or "law", please use `train_specific_args.json` as the `--train_args_file`.
 
 After running `scripts/train_Llama-3.2-1B-Instruct_general.sh`, when the training starts, your terminal should display messages similar to the following:
 
@@ -255,7 +267,7 @@ After running `scripts/train_Llama-3.2-1B-Instruct_general.sh`, when the trainin
 Epoch 0:   0%|                                                             | 0/18720 
 ```
 
-The training process are recorded at `outputs/demo/training_log.txt`. You can check it to observe the loss changes during the training process and the evaluation performance on the validation set.
+The training process is recorded at `outputs/demo/training_log.txt`. You can check it to observe the loss changes during the training process and the evaluation performance on the validation set.
 
 #### Potential Issues
 
@@ -267,7 +279,7 @@ RuntimeError: "triu_tril_cuda_template" not implemented for 'BFloat16'
 
 Solve it by the following steps:
 
-- goto the env foler: `cd [your_env_folder]`. It is usually at `[your miniconda_folder]/envs/re_grad`.
+- goto the env foler: `cd [your_env_folder]`. It is usually at `[your miniconda_folder]/envs/regrad`.
 
 - open the file `lib/python3.10/site-packages/transformers/models/llama/modeling_llama.py`
 
@@ -315,7 +327,7 @@ python src/encode.py \
 
 | **Parameter** | **Example/Options**                                          |
 | :------------ | :----------------------------------------------------------- |
-| `dataset`     | `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`, `medqa`, `pubmedqa`, `bioasq`, `lhf`, `housingqa`, `casehold` |
+| `dataset`     | `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`, `idquad`, `pubmedqa`, `basketball`, `football`, `lhf`, `housingqa`, `casehold` |
 | `data_path`   | folder to the saved data, such as `data/2wikimultihopqa`     |
 | `file_name`   | default="dev", should correspond to the name of your generated development set(such as `dev.json`) |
 | `topk`        | retrieval number                                             |
@@ -338,7 +350,9 @@ offline/
 
 - For `2wikimultihopqa`, `hotpotqa`, `popqa`, `complexwebquestions`: set `index_name = "wiki"`
 
-- For `medqa`, `pubmedqa`, `bioasq`: set `index_name = "med"`
+- For `idquad`, `pubmedqa`: set `index_name = "med"`
+
+- For `basketball`, `football`: set `index_name = "sports"`
 
 - For `lhf`, `housingqa`, `casehold`: set `index_name = "law"`
 
@@ -353,7 +367,7 @@ Saved to offline/demo/top3/2wikimultihopqa/dev.pt
 100%|███████████████████████████████████████████████████████████| 900/900
 ```
 
-The gradients are stored at `offline/demo/top3/2wikimultihopqa/dev.pt`. You can calculate gradients for rest of the datasets by setting `--dataset`, `--data_path`.
+The gradients are stored at `offline/demo/top3/2wikimultihopqa/dev.pt`. You can calculate gradients for rest of the datasets by setting `--dataset` and `--data_path` accordingly.
 
 #### Evaluation
 
@@ -393,7 +407,7 @@ After running `scripts/inference_general_top3.sh`, your terminal should display 
 ===Loading Dataset===
 - data - INFO - Loading WikiMultiHopQA dataset from data_aug/2wikimultihopqa/dev.json.
 - data - INFO - Dataset Loaded.
-... # Loading dev.jsonf for other datasets
+... # Loading dev.json for other datasets
 0%|                                                          | 0/300
 - root - INFO - Loading gradients for dataset 2wikimultihopqa from offline/demo/top3/2wikimultihopqa/dev.pt
 Starting from v4.46, the `logits` model output will have the same type as the model (except at train time, where it will always be FP32)

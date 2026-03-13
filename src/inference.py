@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 from Meta import load_Metalearner, RGModelCreator
 from ICL import ICLModelCreator
-from data import WikiMultiHopQA, HotpotQA, PopQA, ComplexWebQA, MixMultiVal, MedQA, PubMedQA, BioASQ, MixMultiMed, HousingQA, CaseHold, LHF, MixMultiLaw
+from data import WikiMultiHopQA, HotpotQA, PopQA, ComplexWebQA, MixMultiVal, PubMedQA, IDQUAD, MixMultiMed, Basketball, Football, MixMultiSports, HousingQA, CaseHold, LHF, MixMultiLaw
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     )  
     parser.add_argument(
         "--domain",
-        choices=['general', 'med', 'law'],
+        choices=['general', 'med', 'law', 'sports'],
         type=str,
         default='general'
     )
@@ -72,13 +72,20 @@ if __name__ == "__main__":
 
     if args.domain == 'med':
         dataset = MixMultiMed(
-            MedQA(f"data_aug/medqa/{args.dev_set_name}.json").derive_trunc_dataset(
-                args.num_samples_for_eval
-            ),
             PubMedQA(f"data_aug/pubmedqa/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
-            BioASQ(f"data_aug/bioasq/{args.dev_set_name}.json").derive_trunc_dataset(
+            IDQUAD(f"data_aug/idquad/{args.dev_set_name}.json").derive_trunc_dataset(
+                args.num_samples_for_eval
+            ),
+        )
+    
+    if args.domain == 'sports':
+        dataset = MixMultiSports(
+            Basketball(f"data_aug/basketball/{args.dev_set_name}.json").derive_trunc_dataset(
+                args.num_samples_for_eval
+            ),
+            Football(f"data_aug/football/{args.dev_set_name}.json").derive_trunc_dataset(
                 args.num_samples_for_eval
             ),
         )

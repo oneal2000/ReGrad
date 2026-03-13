@@ -35,7 +35,7 @@ simple_ICLprompt_question = """
 Question: {question}
 Answer: """
 
-# yes/no dataset (pubmedqa, bioasq, lhf, housingqa)
+# yes/no dataset (pubmedqa, lhf, housingqa)
 ICLprompt_context_yn = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 ####CONTEXT begin####
 {context}
@@ -383,7 +383,7 @@ class ICLModelBox(ModelBox):
         dataset = contents["dataset"]
         context = contents["context"]
 
-        if dataset in ["pubmedqa", "bioasq", "lhf", "housingqa"]:
+        if dataset in ["pubmedqa", "lhf", "housingqa"]:
             prefix = (ICLprompt_context_blind_yn if blind_context 
                       else ICLprompt_context_yn.format(context=context))
             infer_template = Block([Segment(prefix), Segment(ICLprompt_question)])
@@ -449,7 +449,7 @@ class ICLModelBox(ModelBox):
         answer = all_text.split("Answer:")[-1].split("\n")[0].strip()
 
         dataset = self.contents["dataset"]
-        if dataset in ["pubmedqa", "bioasq", "lhf", "housingqa"]:
+        if dataset in ["pubmedqa", "lhf", "housingqa"]:
             if answer.lower() not in ["yes", "no"]:
                 match = re.search(r"\b(yes|no)\b", answer, re.IGNORECASE)
                 if match:

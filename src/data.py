@@ -655,10 +655,10 @@ class PubMedQA:
         return PubMedQA(gold_file=self.gold_file, data_loaded=self.data[:max_num_samples])
 
 
-class MedQA:
+class IDQUAD:
     def __init__(self, gold_file: str, data_loaded=None):  
         if data_loaded is None:
-            logger.info(f"Loading MedQA dataset from {gold_file}.")
+            logger.info(f"Loading IDQUAD dataset from {gold_file}.")
             with open(gold_file, "r") as f:
                 self.data = json.load(f)
             logger.info("Dataset Loaded.")
@@ -678,7 +678,7 @@ class MedQA:
             context = self.get_context(datum)
             test_id = datum["test_id"]
             materials = {
-                "contents": {"context": context, "test_id": test_id, "dataset": "medqa"}
+                "contents": {"context": context, "test_id": test_id, "dataset": "idquad"}
             }
             modelbox = creator.build(materials)
             question = datum["question"]
@@ -712,7 +712,7 @@ class MedQA:
             datum, datum_shift = self.data[i], self.data[i - 1 if i > 0 else n - 1]
             context = self.get_context(datum_shift)
             materials = {
-                "contents": {"context": context, "test_id": datum_shift["test_id"], "dataset": "medqa"}
+                "contents": {"context": context, "test_id": datum_shift["test_id"], "dataset": "idquad"}
             }
 
             modelbox = creator.build(materials)
@@ -735,7 +735,7 @@ class MedQA:
             data.append({
                 "context": context, 
                 "qas": [(question, answer)], 
-                "dataset": "medqa", 
+                "dataset": "idquad", 
                 "test_id": datum["test_id"]
             })
         return TrainingDataset(data)
@@ -743,105 +743,13 @@ class MedQA:
     def derive_trunc_dataset(self, max_num_samples=None):
         if max_num_samples is None:
             max_num_samples = len(self.data)
-        return MedQA(gold_file=self.gold_file, data_loaded=self.data[:max_num_samples])
+        return IDQUAD(gold_file=self.gold_file, data_loaded=self.data[:max_num_samples])
 
 
-class BioASQ:
-    def __init__(self, gold_file: str, data_loaded=None):  
-        if data_loaded is None:
-            logger.info(f"Loading BioASQ dataset from {gold_file}.")
-            with open(gold_file, "r") as f:
-                self.data = json.load(f)
-            logger.info("Dataset Loaded.")
-        else:
-            self.data = data_loaded
-        self.gold_file = gold_file
-
-    def get_context(self, datum):
-        context = [
-            f"Passage {i}: {passage}" for i, passage in enumerate(datum["passages"])
-        ]
-        return context
-
-    def inference(self, creator: ModelCreator, evaluate_loss=True, show_current_loss=False, max_num_samples=None):
-        predictions, loss, loss_sum, num_qas, num_samples = {}, {}, 0, 0, 0
-        for datum in tqdm(self.data):
-            context = self.get_context(datum)
-            test_id = datum["test_id"]
-            materials = {
-                "contents": {"context": context, "test_id": test_id, "dataset": "bioasq"}
-            }
-            modelbox = creator.build(materials)
-            question = datum["question"]
-
-            if evaluate_loss != "only":
-                predictions[test_id] = modelbox.predict(question)
-            if evaluate_loss:
-                answer = datum["answer"]
-                if isinstance(answer, list):
-                    answer = answer[0]
-                cur_loss = modelbox.loss_evaluate({"question": question, "answer": answer})
-                loss[test_id] = cur_loss
-                loss_sum += cur_loss
-                num_qas += 1
-                if show_current_loss:
-                    print(f"{test_id}: cur_loss = {cur_loss}")
-            creator.recover()
-            num_samples += 1
-            if max_num_samples and num_samples == max_num_samples:
-                break
-        results = {}
-        if evaluate_loss:
-            results["loss"] = loss_sum / num_qas
-        if evaluate_loss != "only":
-            results["predictions"] = {"answer": predictions}
-        return results
-
-    def inference_shift(self, creator: ModelCreator):
-        predictions, n = {}, len(self.data)
-        for i in tqdm(range(n)):
-            datum, datum_shift = self.data[i], self.data[i - 1 if i > 0 else n - 1]
-            context = self.get_context(datum_shift)
-            materials = {
-                "contents": {"context": context, "test_id": datum_shift["test_id"], "dataset": "bioasq"}
-            }
-
-            modelbox = creator.build(materials)
-            predictions[datum["test_id"]] = modelbox.predict(datum["question"])
-            creator.recover()
-        return {"predictions": {"answer": predictions}}
-
-    def evaluate(self, predictions):
-        return eval(predictions, self.gold_file)
-
-    def evaluate_detailed(self, predictions):
-        return eval_detailed(predictions, self.gold_file)
-
-    def derive_training_dataset(self, flatten=None):
-        data = []
-        for datum in self.data:
-            context, question, answer = self.get_context(datum), datum["question"], datum["answer"]
-            if isinstance(answer, list):
-                answer = answer[0]
-            data.append({
-                "context": context, 
-                "qas": [(question, answer)], 
-                "dataset": "bioasq", 
-                "test_id": datum["test_id"]
-            })
-        return TrainingDataset(data)
-
-    def derive_trunc_dataset(self, max_num_samples=None):
-        if max_num_samples is None:
-            max_num_samples = len(self.data)
-        return BioASQ(gold_file=self.gold_file, data_loaded=self.data[:max_num_samples])
-
-    
 class MixMultiMed:
-    def __init__(self, medqa: MedQA, pubmedqa: PubMedQA, bioasq: BioASQ):
-        self.medqa = medqa
+    def __init__(self, pubmedqa: PubMedQA, idquad: IDQUAD):
         self.pubmedqa = pubmedqa
-        self.bioasq = bioasq
+        self.idquad = idquad
 
     def inference(
         self,
@@ -850,82 +758,323 @@ class MixMultiMed:
         evaluate_loss=False,
         show_current_loss=False,
     ):
-        medqa_results = self.medqa.inference(
-            creator,
-            max_num_samples=max_num_samples,
-            evaluate_loss=evaluate_loss,
-            show_current_loss=show_current_loss,
-        )
         pubmedqa_results = self.pubmedqa.inference(
             creator,
             max_num_samples=max_num_samples,
             evaluate_loss=evaluate_loss,
             show_current_loss=show_current_loss,
         )
-        bioasq_results = self.bioasq.inference(
+        idquad_results = self.idquad.inference(
             creator,
             max_num_samples=max_num_samples,
             evaluate_loss=evaluate_loss,
             show_current_loss=show_current_loss,
         )
+        
 
         combined = {}
-        for k in medqa_results.keys():
+        for k in idquad_results.keys():
             combined[k] = {
-                "medqa": medqa_results[k],
                 "pubmedqa": pubmedqa_results[k],
-                "bioasq": bioasq_results[k],
+                "idquad": idquad_results[k],
             }
         return combined
 
     def inference_shift(self, creator: ModelCreator):
-        medqa_results = self.medqa.inference_shift(creator)
         pubmedqa_results = self.pubmedqa.inference_shift(creator)
-        bioasq_results = self.bioasq.inference_shift(creator)
+        idquad_results = self.idquad.inference_shift(creator)
 
         combined = {}
-        for k in medqa_results.keys():
+        for k in idquad_results.keys():
             combined[k] = {
-                "medqa": medqa_results[k],
                 "pubmedqa": pubmedqa_results[k],
-                "bioasq": bioasq_results[k],
+                "idquad": idquad_results[k],
             }
         return combined
 
     def evaluate(self, predictions):
-        score_medqa = self.medqa.evaluate(predictions["medqa"])
         score_pubmedqa = self.pubmedqa.evaluate(predictions["pubmedqa"])
-        score_bioasq = self.bioasq.evaluate(predictions["bioasq"])
+        score_idquad = self.idquad.evaluate(predictions["idquad"])
 
         combined = {
-            "medqa": score_medqa,
             "pubmedqa": score_pubmedqa,
-            "bioasq": score_bioasq,
+            "idquad": score_idquad,
         }
-        for k in score_medqa.keys():
+        for k in score_idquad.keys():
             combined[k] = (
-                score_medqa[k] + score_pubmedqa[k] + score_bioasq[k]
-            ) / 3
+                score_pubmedqa[k] + score_idquad[k]
+            ) / 2
         return combined
 
     def evaluate_detailed(self, predictions):
-        eval_medqa = self.medqa.evaluate_detailed(predictions["medqa"])
         eval_pubmedqa = self.pubmedqa.evaluate_detailed(predictions["pubmedqa"])
-        eval_bioasq = self.bioasq.evaluate_detailed(predictions["bioasq"])
+        eval_idquad = self.idquad.evaluate_detailed(predictions["idquad"])
 
         combined = {
-            "medqa": eval_medqa,
             "pubmedqa": eval_pubmedqa,
-            "bioasq": eval_bioasq,
+            "idquad": eval_idquad,
         }
-        for k in eval_medqa["metrics"].keys():
+        for k in eval_idquad["metrics"].keys():
             combined[k] = (
-                eval_medqa["metrics"][k]
-                + eval_pubmedqa["metrics"][k]
-                + eval_bioasq["metrics"][k]
-            ) / 3
+                eval_pubmedqa["metrics"][k]
+                + eval_idquad["metrics"][k]
+            ) / 2
         return combined
 
+class Basketball:
+    def __init__(self, gold_file: str, data_loaded=None):  
+        if data_loaded is None:
+            logger.info(f"Loading Basketball dataset from {gold_file}.")
+            with open(gold_file, "r") as f:
+                self.data = json.load(f)
+            logger.info("Dataset Loaded.")
+        else:
+            self.data = data_loaded
+        self.gold_file = gold_file
+
+    def get_context(self, datum):
+        context = [
+            f"Passage {i}: {passage}" for i, passage in enumerate(datum["passages"])
+        ]
+        return context
+
+    def inference(self, creator: ModelCreator, evaluate_loss=True, show_current_loss=False, max_num_samples=None):
+        predictions, loss, loss_sum, num_qas, num_samples = {}, {}, 0, 0, 0
+        for datum in tqdm(self.data):
+            context = self.get_context(datum)
+            test_id = datum["test_id"]
+            materials = {
+                "contents": {"context": context, "test_id": test_id, "dataset": "basketball"}
+            }
+            modelbox = creator.build(materials)
+            question = datum["question"]
+
+            if evaluate_loss != "only":
+                predictions[test_id] = modelbox.predict(question)
+            if evaluate_loss:
+                answer = datum["answer"]
+                if isinstance(answer, list):
+                    answer = answer[0]
+                cur_loss = modelbox.loss_evaluate({"question": question, "answer": answer})
+                loss[test_id] = cur_loss
+                loss_sum += cur_loss
+                num_qas += 1
+                if show_current_loss:
+                    print(f"{test_id}: cur_loss = {cur_loss}")
+            creator.recover()
+            num_samples += 1
+            if max_num_samples and num_samples == max_num_samples:
+                break
+        results = {}
+        if evaluate_loss:
+            results["loss"] = loss_sum / num_qas
+        if evaluate_loss != "only":
+            results["predictions"] = {"answer": predictions}
+        return results
+
+    def inference_shift(self, creator: ModelCreator):
+        predictions, n = {}, len(self.data)
+        for i in tqdm(range(n)):
+            datum, datum_shift = self.data[i], self.data[i - 1 if i > 0 else n - 1]
+            context = self.get_context(datum_shift)
+            materials = {
+                "contents": {"context": context, "test_id": datum_shift["test_id"], "dataset": "basketball"}
+            }
+
+            modelbox = creator.build(materials)
+            predictions[datum["test_id"]] = modelbox.predict(datum["question"])
+            creator.recover()
+        return {"predictions": {"answer": predictions}}
+
+    def evaluate(self, predictions):
+        return eval(predictions, self.gold_file)
+
+    def evaluate_detailed(self, predictions):
+        return eval_detailed(predictions, self.gold_file)
+
+    def derive_training_dataset(self, flatten=None):
+        data = []
+        for datum in self.data:
+            context, question, answer = self.get_context(datum), datum["question"], datum["answer"]
+            if isinstance(answer, list):
+                answer = answer[0]
+            data.append({
+                "context": context, 
+                "qas": [(question, answer)], 
+                "dataset": "basketball", 
+                "test_id": datum["test_id"]
+            })
+        return TrainingDataset(data)
+
+    def derive_trunc_dataset(self, max_num_samples=None):
+        if max_num_samples is None:
+            max_num_samples = len(self.data)
+        return Basketball(gold_file=self.gold_file, data_loaded=self.data[:max_num_samples])
+
+class Football:
+    def __init__(self, gold_file: str, data_loaded=None):  
+        if data_loaded is None:
+            logger.info(f"Loading Football dataset from {gold_file}.")
+            with open(gold_file, "r") as f:
+                self.data = json.load(f)
+            logger.info("Dataset Loaded.")
+        else:
+            self.data = data_loaded
+        self.gold_file = gold_file
+
+    def get_context(self, datum):
+        context = [
+            f"Passage {i}: {passage}" for i, passage in enumerate(datum["passages"])
+        ]
+        return context
+
+    def inference(self, creator: ModelCreator, evaluate_loss=True, show_current_loss=False, max_num_samples=None):
+        predictions, loss, loss_sum, num_qas, num_samples = {}, {}, 0, 0, 0
+        for datum in tqdm(self.data):
+            context = self.get_context(datum)
+            test_id = datum["test_id"]
+            materials = {
+                "contents": {"context": context, "test_id": test_id, "dataset": "football"}
+            }
+            modelbox = creator.build(materials)
+            question = datum["question"]
+
+            if evaluate_loss != "only":
+                predictions[test_id] = modelbox.predict(question)
+            if evaluate_loss:
+                answer = datum["answer"]
+                if isinstance(answer, list):
+                    answer = answer[0]
+                cur_loss = modelbox.loss_evaluate({"question": question, "answer": answer})
+                loss[test_id] = cur_loss
+                loss_sum += cur_loss
+                num_qas += 1
+                if show_current_loss:
+                    print(f"{test_id}: cur_loss = {cur_loss}")
+            creator.recover()
+            num_samples += 1
+            if max_num_samples and num_samples == max_num_samples:
+                break
+        results = {}
+        if evaluate_loss:
+            results["loss"] = loss_sum / num_qas
+        if evaluate_loss != "only":
+            results["predictions"] = {"answer": predictions}
+        return results
+
+    def inference_shift(self, creator: ModelCreator):
+        predictions, n = {}, len(self.data)
+        for i in tqdm(range(n)):
+            datum, datum_shift = self.data[i], self.data[i - 1 if i > 0 else n - 1]
+            context = self.get_context(datum_shift)
+            materials = {
+                "contents": {"context": context, "test_id": datum_shift["test_id"], "dataset": "football"}
+            }
+
+            modelbox = creator.build(materials)
+            predictions[datum["test_id"]] = modelbox.predict(datum["question"])
+            creator.recover()
+        return {"predictions": {"answer": predictions}}
+
+    def evaluate(self, predictions):
+        return eval(predictions, self.gold_file)
+
+    def evaluate_detailed(self, predictions):
+        return eval_detailed(predictions, self.gold_file)
+
+    def derive_training_dataset(self, flatten=None):
+        data = []
+        for datum in self.data:
+            context, question, answer = self.get_context(datum), datum["question"], datum["answer"]
+            if isinstance(answer, list):
+                answer = answer[0]
+            data.append({
+                "context": context, 
+                "qas": [(question, answer)], 
+                "dataset": "football", 
+                "test_id": datum["test_id"]
+            })
+        return TrainingDataset(data)
+
+    def derive_trunc_dataset(self, max_num_samples=None):
+        if max_num_samples is None:
+            max_num_samples = len(self.data)
+        return Football(gold_file=self.gold_file, data_loaded=self.data[:max_num_samples])
+
+class MixMultiSports:
+    def __init__(self, basketball: Basketball, football: Football):
+        self.basketball = basketball
+        self.football = football
+
+    def inference(
+        self,
+        creator: ModelCreator,
+        max_num_samples=None,  
+        evaluate_loss=False,
+        show_current_loss=False,
+    ):
+        basketball_results = self.basketball.inference(
+            creator,
+            max_num_samples=max_num_samples,
+            evaluate_loss=evaluate_loss,
+            show_current_loss=show_current_loss,
+        )
+        football_results = self.football.inference(
+            creator,
+            max_num_samples=max_num_samples,
+            evaluate_loss=evaluate_loss,
+            show_current_loss=show_current_loss,
+        )
+        
+
+        combined = {}
+        for k in football_results.keys():
+            combined[k] = {
+                "basketball": basketball_results[k],
+                "football": football_results[k],
+            }
+        return combined
+
+    def inference_shift(self, creator: ModelCreator):
+        basketball_results = self.basketball.inference_shift(creator)
+        football_results = self.football.inference_shift(creator)
+
+        combined = {}
+        for k in football_results.keys():
+            combined[k] = {
+                "basketball": basketball_results[k],
+                "football": football_results[k],
+            }
+        return combined
+
+    def evaluate(self, predictions):
+        score_basketball = self.basketball.evaluate(predictions["basketball"])
+        score_football = self.football.evaluate(predictions["football"])
+
+        combined = {
+            "basketball": score_basketball,
+            "football": score_football,
+        }
+        for k in score_football.keys():
+            combined[k] = (
+                score_basketball[k] + score_football[k]
+            ) / 2
+        return combined
+
+    def evaluate_detailed(self, predictions):
+        eval_basketball = self.basketball.evaluate_detailed(predictions["basketball"])
+        eval_football = self.football.evaluate_detailed(predictions["football"])
+
+        combined = {
+            "basketball": eval_basketball,
+            "football": eval_football,
+        }
+        for k in eval_football["metrics"].keys():
+            combined[k] = (
+                eval_basketball["metrics"][k]
+                + eval_football["metrics"][k]
+            ) / 2
+        return combined
 
 class CaseHold:
     def __init__(self, gold_file: str, data_loaded=None):  

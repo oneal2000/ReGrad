@@ -7,7 +7,10 @@ from collections import Counter
 
 def normalize_answer(s):
     def remove_articles(text):
-        return re.sub(r"\b(a|an|the)\b", " ", text)
+        if text == "a":
+            return text
+        else:
+            return re.sub(r"\b(a|an|the)\b", " ", text)
 
     def white_space_fix(text):
         return " ".join(text.split())
