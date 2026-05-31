@@ -1,0 +1,10 @@
+python src/Meta.py \
+  --peft_config_file config/Llama-3.2-1B-Instruct/peft_config.json \
+  --train_args_file config/Llama-3.2-1B-Instruct/train_args.json \
+  --generation_config_file config/Llama-3.2-1B-Instruct/generation_config.json \
+  --learner_config_file config/Llama-3.2-1B-Instruct/learner_config.json \
+  --output_dir outputs/demo \
+  --train_set_name train \
+  --dev_set_name dev \
+  --domain general \
+  --overwrite 
